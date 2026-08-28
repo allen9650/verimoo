@@ -1,0 +1,123 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #3b82f6;
+  --color-indigo: #4f46e5;
+  --color-purple: #7c3aed;
+  --color-purple-light: #8b5cf6;
+  --font-sans: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/*
+  Direct Inter font declaration with specified unicode-range & weight
+*/
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7SUc.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+/*
+  Same font files embedded directly into generated certificates
+*/
+@font-face {
+  font-family: "VeriMooEmbedded";
+  src: url("/fonts/inter-regular.woff") format("woff");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VeriMooEmbedded";
+  src: url("/fonts/inter-bold.woff") format("woff");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* Tailwind v4 class-based dark mode: toggled via a `.dark` class on <html> */
+@variant dark (&:where(.dark, .dark *));
+
+html {
+  scroll-behavior: smooth;
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  @apply bg-[#F8FAFC] text-[#111827] antialiased selection:bg-blue-500/20 selection:text-[#2563EB] dark:bg-black dark:text-[#F8FAFC];
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Respect user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+  Tailwind v4 component utilities
+*/
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none bg-[#2563EB] text-white hover:bg-[#1D4ED8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black shadow-xs hover:shadow-sm cursor-pointer;
+}
+
+@utility btn-gradient {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none bg-gradient-to-r from-[#2563EB] via-[#4F46E5] to-[#7C3AED] text-white hover:opacity-95 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black shadow-sm cursor-pointer;
+}
+
+@utility btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none bg-slate-100 text-slate-800 hover:bg-slate-200 active:scale-[0.98] dark:bg-[#18181c] dark:text-slate-200 dark:hover:bg-[#23232a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-offset-black cursor-pointer;
+}
+
+@utility btn-outline {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none border border-[#E2E8F0] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-[#27272a] dark:bg-[#0e0e12] dark:text-slate-300 dark:hover:bg-[#18181c] dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] dark:focus-visible:ring-offset-black shadow-xs cursor-pointer;
+}
+
+@utility btn-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none bg-[#EF4444] text-white hover:bg-[#DC2626] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF4444] dark:focus-visible:ring-offset-black shadow-xs cursor-pointer;
+}
+
+@utility btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#18181c] dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] dark:focus-visible:ring-offset-black cursor-pointer;
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2 text-sm text-[#111827] transition-colors placeholder:text-slate-400 focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 dark:border-[#27272a] dark:bg-[#0e0e12] dark:text-[#F8FAFC] dark:placeholder:text-slate-500 dark:focus:border-[#3B82F6] dark:focus:ring-[#3B82F6]/30 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+@utility card {
+  @apply rounded-xl border border-[#E2E8F0] bg-white shadow-xs dark:border-[#27272a] dark:bg-[#0e0e12];
+}
+
+@utility card-hover {
+  @apply transition-all duration-200 hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-500/50;
+}
+
+/* Custom scrollbars for high-density tables and studio panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 70, 229, 0.5);
+}

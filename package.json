@@ -1,0 +1,45 @@
+{
+  "name": "cert-system",
+  "version": "0.2.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "typecheck": "tsc --noEmit",
+    "seed:admin": "node scripts/seed-admin.js"
+  },
+  "dependencies": {
+    "archiver": "8.0.0",
+    "bcryptjs": "3.0.3",
+    "clsx": "2.1.1",
+    "framer-motion": "12.42.2",
+    "lucide-react": "1.24.0",
+    "mongoose": "9.7.3",
+    "next": "16.2.10",
+    "next-auth": "4.24.14",
+    "nodemailer": "7.0.13",
+    "qrcode": "1.5.4",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "sharp": "^0.35.3",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.2",
+    "@types/node": "26.1.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "dotenv": "17.4.2",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.10",
+    "postcss": "8.5.16",
+    "tailwindcss": "4.3.2",
+    "typescript": "6.0.3"
+  }
+}
