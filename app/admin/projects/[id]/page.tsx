@@ -1677,11 +1677,11 @@ export default function ProjectDetailPage() {
                               </button>
                               <a
                                 className="text-gray-600 hover:text-primary hover:underline dark:text-gray-300"
-                                href={`/api/certificate/${p.serialNumber}?format=download`}
+                                href={`/api/certificate/${p.serialNumber}?format=png`}
                                 onClick={() => markParticipantIssued(p._id)}
-                                title="Download SVG certificate"
+                                title="Download 300 DPI HD PNG certificate"
                               >
-                                Download SVG
+                                Download HD PNG
                               </a>
                               <button className="text-red-500 hover:underline" onClick={() => deleteParticipant(p._id)}>
                                 Delete
@@ -2146,10 +2146,16 @@ export default function ProjectDetailPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
               <div className="flex flex-wrap items-center gap-2">
                 <a
-                  href={`/api/certificate/${previewParticipant.serialNumber}?format=download`}
-                  className="btn-primary flex items-center gap-1.5 text-xs"
+                  href={`/api/certificate/${previewParticipant.serialNumber}?format=png`}
+                  className="btn-primary flex items-center gap-1.5 text-xs shadow-xs"
                 >
-                  <Download size={14} /> Download SVG
+                  <Download size={14} /> Download HD PNG
+                </a>
+                <a
+                  href={`/api/certificate/${previewParticipant.serialNumber}?format=svg-download`}
+                  className="btn-outline flex items-center gap-1.5 text-xs shadow-xs"
+                >
+                  <Download size={14} className="text-[#2563EB] dark:text-[#3B82F6]" /> Download SVG
                 </a>
                 <a
                   href={`/api/certificate/${previewParticipant.serialNumber}`}

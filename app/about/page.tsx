@@ -87,7 +87,7 @@ export default function AboutPage() {
             </a>
             <span>·</span>
             <a
-              href="https://github.com/allen9650/verimoo"
+              href="https://github.com/allen9650/"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#2563EB] transition"

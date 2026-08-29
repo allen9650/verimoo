@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   AlertCircle,
   Award,
-  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { Button, Input, Card, Badge } from "@/components/ui";
 import { ProgressBar } from "@/components/progress-bar";
@@ -25,6 +25,7 @@ export default function HomePage() {
   const [info, setInfo] = useState<VerifyResult | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +57,42 @@ export default function HomePage() {
     setInfo(null);
     setImageLoaded(false);
     setImageError(false);
+  }
+
+  async function handleDownload(format: "png" | "svg" = "png", serialNumber?: string) {
+    const targetSerial = (serialNumber || info?.serialNumber || serial).trim();
+    if (!targetSerial) return;
+    setDownloading(true);
+
+    const formatParam = format === "svg" ? "svg-download" : "png";
+    const extension = format === "svg" ? "svg" : "png";
+
+    try {
+      const res = await fetch(`/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`);
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${targetSerial}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (err) {
+      console.warn("Blob download failed, falling back to direct anchor:", err);
+      const fallbackLink = document.createElement("a");
+      fallbackLink.href = `/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`;
+      fallbackLink.download = `${targetSerial}.${extension}`;
+      fallbackLink.target = "_blank";
+      document.body.appendChild(fallbackLink);
+      fallbackLink.click();
+      document.body.removeChild(fallbackLink);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -102,9 +139,8 @@ export default function HomePage() {
                 href="https://www.linkedin.com/in/ahsan-raza8hbb/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="LinkedIn Profile"
-                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#0A66C2] transition dark:text-slate-400 dark:hover:bg-[#18181c] dark:hover:text-white"
-                title="LinkedIn Profile (Ahsan)"
+                className="p-1.5 text-slate-500 hover:text-[#2563EB] transition dark:text-slate-400 dark:hover:text-white"
+                title="LinkedIn (Ahsan)"
               >
                 <LinkedinIcon size={16} />
               </a>
@@ -112,8 +148,7 @@ export default function HomePage() {
                 href="https://github.com/allen9650/verimoo"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="GitHub Repository"
-                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-black transition dark:text-slate-400 dark:hover:bg-[#18181c] dark:hover:text-white"
+                className="p-1.5 text-slate-500 hover:text-[#2563EB] transition dark:text-slate-400 dark:hover:text-white"
                 title="GitHub Repository"
               >
                 <GithubIcon size={16} />
@@ -125,112 +160,141 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content with Modern Soft Gradient Hero Area */}
+      {/* Main Hero & Search Section */}
       <main className="flex-1">
-        <section className="relative overflow-hidden bg-gradient-to-b from-[#EFF6FF] via-[#EEF2FF]/60 to-transparent dark:from-[#2563EB]/15 dark:via-[#7C3AED]/10 dark:to-transparent py-14 sm:py-20 text-center px-4">
-          <div className="mx-auto max-w-2xl">
-            {/* Hero Pill Badge */}
-            <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-white/80 px-3.5 py-1 text-xs font-semibold text-[#4F46E5] shadow-xs backdrop-blur-xs dark:border-indigo-900/50 dark:bg-[#141418]/80 dark:text-indigo-300">
-              <Sparkles size={13} className="text-[#7C3AED]" />
-              <span>Digital Trust & Certificate Verification</span>
-            </div>
+        <section className="relative overflow-hidden py-12 sm:py-20">
+          <div className="mx-auto max-w-4xl px-4 text-center">
 
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#111827] dark:text-[#F8FAFC] leading-tight">
-              Instant Certificate & Credential Verification
-            </h1>
-            <p className="mt-3.5 text-sm sm:text-base text-[#64748B] dark:text-[#94A3B8] max-w-lg mx-auto leading-relaxed">
-              Search, verify authenticity, and download verified digital certificates issued securely with VeriMoo.
-            </p>
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1 text-xs font-semibold text-[#2563EB] dark:border-[#27272a] dark:bg-[#0e0e12] dark:text-[#3B82F6] shadow-xs"
+            >
+              <ShieldCheck size={14} />
+              <span>Digital Certificate Verification System</span>
+            </motion.div>
 
-            {/* Search Form */}
-            <form onSubmit={handleSearch} className="mt-8 mx-auto max-w-lg">
-              <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
-                <div className="relative flex-1">
-                  <Search
-                    size={18}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="e.g. CERT-00001 or serial number"
-                    value={serial}
-                    onChange={(e) => setSerial(e.target.value)}
-                    className="pl-10 h-11 text-sm font-mono sm:text-base shadow-xs"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={status === "loading" || !serial.trim()}
-                  loading={status === "loading"}
-                  className="h-11 sm:w-28 text-sm sm:text-base font-semibold shadow-xs"
-                >
-                  Search
-                </Button>
-              </div>
-            </form>
+            {/* Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl text-[#111827] dark:text-[#F8FAFC]"
+            >
+              Verify Any Certificate Instantly
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-3 text-sm sm:text-base text-[#64748B] dark:text-[#94A3B8] max-w-xl mx-auto"
+            >
+              Enter the unique certificate serial number below to verify authenticity and download official high-resolution credentials.
+            </motion.p>
+
+            {/* Search Box */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="mx-auto mt-8 max-w-xl"
+            >
+              <Card className="p-2 sm:p-2.5 shadow-xl border-[#E2E8F0] dark:border-[#27272a] bg-white/95 dark:bg-[#0e0e12]">
+                <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Search
+                      size={18}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <Input
+                      type="text"
+                      placeholder="e.g. CERT-00001 or 4324-ABCD-1234"
+                      value={serial}
+                      onChange={(e) => setSerial(e.target.value)}
+                      className="w-full pl-10 text-sm font-mono"
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={status === "loading" || !serial.trim()}
+                    className="sm:w-auto w-full text-sm font-semibold shadow-xs"
+                  >
+                    {status === "loading" ? "Verifying..." : "Verify Certificate"}
+                  </Button>
+                </form>
+              </Card>
+            </motion.div>
           </div>
-        </section>
 
-        {/* Results Area */}
-        <section className="mx-auto max-w-2xl px-4 pb-16">
+          {/* Search Results Area */}
           <AnimatePresence mode="wait">
+            {status === "loading" && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mx-auto mt-8 max-w-xl px-4"
+              >
+                <Card className="p-8 text-center space-y-3">
+                  <ProgressBar label="Looking up certificate in secure registry..." />
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    Validating cryptographic signatures &amp; issuer credentials...
+                  </p>
+                </Card>
+              </motion.div>
+            )}
+
             {status === "notfound" && (
               <motion.div
                 key="notfound"
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.2 }}
-                className="rounded-xl border border-red-200 bg-red-50/80 p-4 text-left text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300 shadow-xs"
+                exit={{ opacity: 0, y: -10 }}
+                className="mx-auto mt-8 max-w-xl px-4"
               >
-                <div className="flex items-start gap-3">
-                  <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#EF4444]" />
-                  <div>
-                    <h3 className="font-semibold">No Certificate Found</h3>
-                    <p className="mt-1 text-xs sm:text-sm text-red-700/90 dark:text-red-300/90">
-                      No certificate was found for &ldquo;<span className="font-mono font-medium">{serial}</span>&rdquo;. Please check the serial number and try again.
-                    </p>
+                <Card className="p-6 text-center space-y-3 border-red-200 bg-red-50/40 dark:border-red-950/60 dark:bg-red-950/20">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/80 dark:text-red-400">
+                    <AlertCircle size={24} />
                   </div>
-                </div>
+                  <h3 className="text-base font-bold text-red-900 dark:text-red-200">
+                    Certificate Not Found
+                  </h3>
+                  <p className="text-xs sm:text-sm text-red-700/90 dark:text-red-300/90 max-w-md mx-auto">
+                    No certificate matching serial number <strong>&quot;{serial}&quot;</strong> could be verified. Please double-check the code and try again.
+                  </p>
+                </Card>
               </motion.div>
             )}
 
             {status === "found" && info && (
               <motion.div
                 key="found"
-                initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="text-left"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                className="mx-auto mt-8 max-w-3xl px-4"
               >
-                <Card className="overflow-hidden border-indigo-200/80 shadow-lg dark:border-indigo-900/40">
+                <Card className="overflow-hidden border-indigo-200/90 shadow-2xl dark:border-[#27272a] dark:bg-[#0e0e12]">
                   {/* Verified Header Banner */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/10 p-4 sm:p-5 dark:border-[#334155]">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-[#10B981] dark:bg-emerald-950/60 dark:text-emerald-400 shadow-xs">
-                        <ShieldCheck size={22} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="text-base sm:text-lg font-bold text-[#111827] dark:text-[#F8FAFC] break-words">
-                            {info.name}
-                          </h2>
-                          <Badge color="green" dot>
-                            Verified
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-[#64748B] dark:text-[#94A3B8] font-mono truncate">
-                          Serial: {info.serialNumber}
-                        </p>
-                      </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] bg-slate-50/80 px-4 py-3 sm:px-6 dark:border-[#27272a] dark:bg-[#141418]">
+                    <div className="flex items-center gap-2">
+                      <Badge color="green" dot className="font-semibold">
+                        Verified &amp; Authentic
+                      </Badge>
+                      <span className="font-mono text-xs font-semibold text-[#2563EB] dark:text-[#3B82F6]">
+                        {info.serialNumber}
+                      </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="text-xs text-[#64748B] hover:text-[#2563EB] transition dark:hover:text-white"
+                      className="text-xs text-[#64748B] hover:text-[#2563EB] transition dark:hover:text-white cursor-pointer"
                     >
                       Search another
                     </button>
@@ -261,26 +325,38 @@ export default function HomePage() {
                     </div>
 
                     {/* SVG Certificate Preview Frame */}
-                    <div className="relative min-h-[160px] w-full overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 sm:p-4 text-center dark:border-[#27272a] dark:bg-black">
+                    <div className="relative min-h-[180px] w-full overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 sm:p-4 text-center dark:border-[#27272a] dark:bg-black">
                       {!imageLoaded && !imageError && (
-                        <div className="flex h-48 items-center justify-center">
-                          <ProgressBar label="Rendering high-resolution certificate..." />
+                        <div className="flex h-56 items-center justify-center">
+                          <ProgressBar label="Rendering high-resolution vector certificate..." />
                         </div>
                       )}
                       {imageError && (
-                        <div className="p-8 text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
-                          <Award className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-                          <p>Certificate preview unavailable. You can still download the certificate below.</p>
+                        <div className="p-8 text-center text-sm text-[#64748B] dark:text-[#94A3B8] space-y-3">
+                          <Award className="mx-auto h-8 w-8 text-slate-400" />
+                          <p>Certificate rendered securely. You can view or download the official file below.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImageError(false);
+                              setImageLoaded(false);
+                            }}
+                            className="btn-outline inline-flex items-center gap-1.5 text-xs py-1.5 px-3 cursor-pointer"
+                          >
+                            <RefreshCw size={13} />
+                            <span>Retry Preview</span>
+                          </button>
                         </div>
                       )}
                       {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic SVG Certificate */}
                       <img
+                        key={`${info.serialNumber}-${imageError ? "retry" : "main"}`}
                         src={`/api/certificate/${encodeURIComponent(info.serialNumber ?? "")}?format=svg`}
                         alt={`Certificate for ${info.name}`}
                         onLoad={() => setImageLoaded(true)}
                         onError={() => setImageError(true)}
-                        className={`mx-auto max-h-[60vh] w-auto max-w-full rounded-lg shadow-sm object-contain transition-opacity duration-200 ${
-                          imageLoaded ? "opacity-100" : "hidden"
+                        className={`mx-auto max-h-[65vh] w-auto max-w-full rounded-lg shadow-sm object-contain transition-opacity duration-200 ${
+                          imageLoaded && !imageError ? "opacity-100 block" : "hidden"
                         }`}
                       />
                     </div>
@@ -288,13 +364,24 @@ export default function HomePage() {
                     {/* Action Buttons */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <a
-                          className="btn-primary text-xs sm:text-sm"
-                          href={`/api/certificate/${encodeURIComponent(info.serialNumber ?? "")}?format=download`}
+                        <button
+                          type="button"
+                          onClick={() => handleDownload("png", info.serialNumber)}
+                          disabled={downloading}
+                          className="btn-primary text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >
                           <Download size={15} />
+                          <span>{downloading ? "Downloading HD PNG..." : "Download HD PNG"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownload("svg", info.serialNumber)}
+                          disabled={downloading}
+                          className="btn-outline text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
+                        >
+                          <Download size={14} className="text-[#2563EB] dark:text-[#3B82F6]" />
                           <span>Download SVG</span>
-                        </a>
+                        </button>
                         <Link
                           className="btn-outline text-xs sm:text-sm"
                           href={`/verify/${encodeURIComponent(info.serialNumber ?? "")}`}
@@ -305,7 +392,7 @@ export default function HomePage() {
                       </div>
 
                       <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
-                        Print at <strong>100% (Actual Size)</strong>
+                        Ultra HD <strong>300 DPI PNG</strong>
                       </p>
                     </div>
                   </div>
@@ -330,43 +417,34 @@ export default function HomePage() {
               height={22}
               className="h-5 w-auto object-contain"
             />
-            <span>
-              © {new Date().getFullYear()} <strong>Ahsan & Team</strong> · <strong>VeriMoo</strong> Platform
-            </span>
+            <span>© {new Date().getFullYear()} <strong>Ahsan & Team</strong> · VeriMoo Platform</span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-medium">
+          <div className="flex flex-wrap items-center gap-4 font-medium">
             <a
               href="https://www.linkedin.com/in/ahsan-raza8hbb/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#2563EB] transition flex items-center gap-1.5"
+              className="hover:text-[#2563EB] transition"
             >
-              <LinkedinIcon size={14} className="text-[#0A66C2]" />
-              <span>LinkedIn (Ahsan)</span>
+              LinkedIn (Ahsan)
             </a>
             <span>·</span>
             <a
               href="https://github.com/allen9650/verimoo"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#2563EB] transition flex items-center gap-1.5"
+              className="hover:text-[#2563EB] transition"
             >
-              <GithubIcon size={14} />
-              <span>GitHub Repository</span>
+              GitHub
             </a>
             <span>·</span>
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("open-changelog"))}
-              className="hover:text-[#2563EB] transition cursor-pointer text-slate-500 hover:underline flex items-center gap-1"
-            >
-              <Sparkles size={12} className="text-[#7C3AED]" />
-              <span>v1.2.4 Changelog</span>
-            </button>
+            <Link href="/about" className="hover:text-[#2563EB] transition">
+              About &amp; Services
+            </Link>
             <span>·</span>
             <Link href="/login" className="hover:text-[#2563EB] transition">
-              Admin Login
+              Admin Portal
             </Link>
           </div>
         </div>

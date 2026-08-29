@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -16,9 +16,12 @@ import {
   BookOpen,
   UserCheck,
   ArrowLeft,
+  Eye,
+  Award,
 } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ProgressBar } from "@/components/progress-bar";
 import { VERIFICATION_THEMES } from "@/lib/verificationThemes";
 import type { VerifyResult } from "@/lib/types";
 
@@ -34,6 +37,10 @@ export default function VerifyPage() {
   const { serial } = useParams<{ serial: string }>();
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPreview, setShowPreview] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (!serial) return;
@@ -43,6 +50,42 @@ export default function VerifyPage() {
       .catch(() => setResult({ valid: false, message: "Network error occurred." }))
       .finally(() => setLoading(false));
   }, [serial]);
+
+  async function handleDownload(format: "png" | "svg" = "png") {
+    const targetSerial = (result?.serialNumber || serial || "").trim();
+    if (!targetSerial) return;
+    setDownloading(true);
+
+    const formatParam = format === "svg" ? "svg-download" : "png";
+    const extension = format === "svg" ? "svg" : "png";
+
+    try {
+      const res = await fetch(`/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`);
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${targetSerial}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (err) {
+      console.warn("Blob download fallback:", err);
+      const fallbackLink = document.createElement("a");
+      fallbackLink.href = `/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`;
+      fallbackLink.download = `${targetSerial}.${extension}`;
+      fallbackLink.target = "_blank";
+      document.body.appendChild(fallbackLink);
+      fallbackLink.click();
+      document.body.removeChild(fallbackLink);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const theme =
     (result?.verificationTemplate &&
@@ -83,7 +126,7 @@ export default function VerifyPage() {
           initial={{ opacity: 0, y: 14, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-xl dark:border-[#27272a] dark:bg-[#0e0e12]"
+          className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-xl dark:border-[#27272a] dark:bg-[#0e0e12]"
         >
           {loading && (
             <div className="p-10 text-center space-y-4">
@@ -197,18 +240,77 @@ export default function VerifyPage() {
                   )}
                 </div>
 
+                {/* SVG Certificate Preview Option */}
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreview((prev) => !prev)}
+                      className="text-xs font-semibold text-[#2563EB] hover:underline flex items-center gap-1.5 dark:text-[#3B82F6] cursor-pointer"
+                    >
+                      <Eye size={13} />
+                      <span>{showPreview ? "Hide Certificate Preview" : "Show Certificate Preview"}</span>
+                    </button>
+                    <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">Vector SVG format</span>
+                  </div>
+
+                  <AnimatePresence>
+                    {showPreview && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 text-center dark:border-[#27272a] dark:bg-black"
+                      >
+                        {!imageLoaded && !imageError && (
+                          <div className="flex h-44 items-center justify-center">
+                            <ProgressBar label="Loading certificate SVG preview..." />
+                          </div>
+                        )}
+                        {imageError && (
+                          <div className="p-6 text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
+                            <Award className="mx-auto h-6 w-6 text-slate-400 mb-1" />
+                            <p>Certificate rendered securely. You can download the official file below.</p>
+                          </div>
+                        )}
+                        {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic SVG Certificate */}
+                        <img
+                          src={`/api/certificate/${encodeURIComponent(result.serialNumber ?? "")}?format=svg`}
+                          alt={`Certificate for ${result.name}`}
+                          onLoad={() => setImageLoaded(true)}
+                          onError={() => setImageError(true)}
+                          className={`mx-auto max-h-[50vh] w-auto max-w-full rounded-lg shadow-xs object-contain transition-opacity duration-200 ${
+                            imageLoaded && !imageError ? "opacity-100 block" : "hidden"
+                          }`}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 {/* Actions */}
                 <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2.5">
-                  <a
-                    href={`/api/certificate/${encodeURIComponent(result.serialNumber ?? "")}?format=download`}
-                    className="btn-primary flex-1 text-xs sm:text-sm font-semibold"
+                  <button
+                    type="button"
+                    onClick={() => handleDownload("png")}
+                    disabled={downloading}
+                    className="btn-primary flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
                   >
                     <Download size={15} />
+                    <span>{downloading ? "Downloading HD PNG..." : "Download HD PNG"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload("svg")}
+                    disabled={downloading}
+                    className="btn-outline flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    <Download size={14} className="text-[#2563EB] dark:text-[#3B82F6]" />
                     <span>Download SVG</span>
-                  </a>
+                  </button>
                   <Link
                     href="/"
-                    className="btn-outline flex-1 text-xs sm:text-sm"
+                    className="btn-outline text-xs sm:text-sm inline-flex items-center justify-center gap-2"
                   >
                     <Search size={15} />
                     <span>Search Another</span>

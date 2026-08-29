@@ -52,6 +52,14 @@ export const CHANGELOGS: ChangelogRelease[] = [
         text: "Mobile View Protection: Added desktop editing recommendation banner and locked canvas component positions as fixed in mobile view to prevent displacement.",
       },
       {
+        type: "feature",
+        text: "HD PNG Default Download Engine: Made ultra high-definition 300 DPI PNG the primary default format for single certificate downloads across the public portal, verification page, and admin management, with optional vector SVG download.",
+      },
+      {
+        type: "improvement",
+        text: "Production Rendering: Added cross-platform font fallbacks, XML namespace safeguards (xmlns:xlink), and programmatic blob streaming to guarantee seamless preview and downloads in all environments.",
+      },
+      {
         type: "improvement",
         text: "Updated ProgressBar to animate with the VeriMoo tri-color brand gradient with zero layout delay.",
       },
