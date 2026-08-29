@@ -39,15 +39,23 @@ export default function HomePage() {
     setSvgMarkup("");
 
     try {
-      const res = await fetch(`/api/verify/${encodeURIComponent(query)}`);
+      let res = await fetch(`/api/verify/${encodeURIComponent(query)}`);
+      if (!res.ok) {
+        res = await fetch(`/api/verify?serial=${encodeURIComponent(query)}`);
+      }
       const data = await res.json();
-      if (res.ok && data.valid) {
+      if (data && data.valid) {
         setInfo(data);
         setStatus("found");
 
-        // Fetch SVG markup for reliable direct rendering and 300 DPI canvas conversion
-        fetch(`/api/certificate/${encodeURIComponent(data.serialNumber || query)}?format=svg`)
-          .then((r) => (r.ok ? r.text() : ""))
+        const targetSerial = data.serialNumber || query;
+        // Fetch SVG markup with query endpoint fallback for universal reliability
+        fetch(`/api/certificate/${encodeURIComponent(targetSerial)}?format=svg`)
+          .then(async (r) => {
+            if (r.ok) return r.text();
+            const fallback = await fetch(`/api/certificate?serial=${encodeURIComponent(targetSerial)}&format=svg`);
+            return fallback.ok ? fallback.text() : "";
+          })
           .then((svg) => {
             if (svg && svg.includes("<svg")) {
               setSvgMarkup(svg);

@@ -46,13 +46,23 @@ export default function VerifyPage() {
 
   useEffect(() => {
     if (!serial) return;
-    fetch(`/api/verify/${encodeURIComponent(serial)}`)
-      .then((r) => r.json())
-      .then((data) => {
+    async function loadData() {
+      try {
+        let res = await fetch(`/api/verify/${encodeURIComponent(serial)}`);
+        if (!res.ok) {
+          res = await fetch(`/api/verify?serial=${encodeURIComponent(serial)}`);
+        }
+        const data = await res.json();
         setResult(data);
+
         if (data && data.valid) {
-          fetch(`/api/certificate/${encodeURIComponent(data.serialNumber || serial)}?format=svg`)
-            .then((r) => (r.ok ? r.text() : ""))
+          const target = data.serialNumber || serial;
+          fetch(`/api/certificate/${encodeURIComponent(target)}?format=svg`)
+            .then(async (r) => {
+              if (r.ok) return r.text();
+              const fallback = await fetch(`/api/certificate?serial=${encodeURIComponent(target)}&format=svg`);
+              return fallback.ok ? fallback.text() : "";
+            })
             .then((svg) => {
               if (svg && svg.includes("<svg")) {
                 setSvgMarkup(svg);
@@ -61,9 +71,13 @@ export default function VerifyPage() {
             })
             .catch(() => {});
         }
-      })
-      .catch(() => setResult({ valid: false, message: "Network error occurred." }))
-      .finally(() => setLoading(false));
+      } catch {
+        setResult({ valid: false, message: "Network error occurred." });
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, [serial]);
 
   async function handleDownload(format: "png" | "svg" = "png") {

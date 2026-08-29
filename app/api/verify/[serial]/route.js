@@ -9,14 +9,24 @@ export async function GET(req, { params }) {
   try {
     const resolvedParams = await Promise.resolve(params);
     const rawSerial = resolvedParams?.serial || "";
-    const serial = decodeURIComponent(rawSerial).trim();
+    let serial = decodeURIComponent(rawSerial).trim();
+    try {
+      if (serial.includes("%")) {
+        serial = decodeURIComponent(serial).trim();
+      }
+    } catch {}
+
+    const { searchParams } = new URL(req.url);
+    if (!serial) {
+      serial = (searchParams.get("serial") || searchParams.get("s") || "").trim();
+    }
 
     if (!serial) {
       return NextResponse.json({ valid: false, message: "Serial number is required." }, { status: 400 });
     }
 
     // Public rate limit
-    if (isRateLimited(`verify:${getClientKey(req)}`, 120)) {
+    if (isRateLimited(`verify:${getClientKey(req)}`, 180)) {
       return NextResponse.json(
         { valid: false, message: "Too many requests. Please slow down and try again shortly." },
         { status: 429 }

@@ -10,18 +10,27 @@ export async function GET(req, { params }) {
   try {
     const resolvedParams = await Promise.resolve(params);
     const rawSerial = resolvedParams?.serial || "";
-    const serial = decodeURIComponent(rawSerial).trim();
+    let serial = decodeURIComponent(rawSerial).trim();
+    try {
+      if (serial.includes("%")) {
+        serial = decodeURIComponent(serial).trim();
+      }
+    } catch {}
+
+    const { searchParams } = new URL(req.url);
+    if (!serial) {
+      serial = (searchParams.get("serial") || "").trim();
+    }
 
     if (!serial) {
       return NextResponse.json({ error: "Serial number is required." }, { status: 400 });
     }
 
-    const { searchParams } = new URL(req.url);
     // Default format for downloads is HD PNG (png), format=svg is for inline preview
     const format = (searchParams.get("format") || "svg").toLowerCase();
 
     // Public, unauthenticated endpoint — rate-limited
-    if (isRateLimited(`cert:${getClientKey(req)}`, 120)) {
+    if (isRateLimited(`cert:${getClientKey(req)}`, 180)) {
       return NextResponse.json({ error: "Too many requests. Please slow down and try again shortly." }, { status: 429 });
     }
 
@@ -118,7 +127,7 @@ export async function GET(req, { params }) {
       });
     }
 
-    // --- Inline SVG Preview (Default for <img> rendering) ---
+    // --- Inline SVG Preview (Default for preview rendering) ---
     return new NextResponse(svg, {
       status: 200,
       headers: {

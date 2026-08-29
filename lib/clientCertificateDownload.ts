@@ -126,7 +126,10 @@ export async function downloadCertificateHD(
 
   // First attempt: Server-side Sharp HD PNG (if available)
   try {
-    const serverRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=png`);
+    let serverRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=png`);
+    if (!serverRes.ok) {
+      serverRes = await fetch(`/api/certificate?serial=${encodeURIComponent(cleanSerial)}&format=png`);
+    }
     if (serverRes.ok && serverRes.headers.get("content-type")?.includes("image/png")) {
       const blob = await serverRes.blob();
       if (blob.size > 1000) {
@@ -142,7 +145,10 @@ export async function downloadCertificateHD(
   let svgToRender = svgContent;
   if (!svgToRender) {
     try {
-      const svgRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=svg`);
+      let svgRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=svg`);
+      if (!svgRes.ok) {
+        svgRes = await fetch(`/api/certificate?serial=${encodeURIComponent(cleanSerial)}&format=svg`);
+      }
       if (svgRes.ok) {
         svgToRender = await svgRes.text();
       }
