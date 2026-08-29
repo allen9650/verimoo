@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Download,
+  FileText,
   Search,
   Calendar,
   Hash,
@@ -23,7 +24,7 @@ import { Badge } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProgressBar } from "@/components/progress-bar";
 import { VERIFICATION_THEMES } from "@/lib/verificationThemes";
-import { downloadCertificateHD } from "@/lib/clientCertificateDownload";
+import { downloadCertificate } from "@/lib/clientCertificateDownload";
 import type { VerifyResult } from "@/lib/types";
 
 const DEFAULT_THEME = {
@@ -80,13 +81,13 @@ export default function VerifyPage() {
     loadData();
   }, [serial]);
 
-  async function handleDownload(format: "png" | "svg" = "png") {
+  async function handleDownload(format: "png" | "pdf" = "png") {
     const targetSerial = (result?.serialNumber || serial || "").trim();
     if (!targetSerial) return;
     setDownloading(true);
 
     try {
-      await downloadCertificateHD(targetSerial, svgMarkup, format);
+      await downloadCertificate(targetSerial, format, svgMarkup);
     } catch (err) {
       console.error("Download error:", err);
     } finally {
@@ -258,7 +259,7 @@ export default function VerifyPage() {
                       <Eye size={13} />
                       <span>{showPreview ? "Hide Certificate Preview" : "Show Certificate Preview"}</span>
                     </button>
-                    <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">Vector SVG &amp; 300 DPI PNG</span>
+                    <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">High-Definition Preview</span>
                   </div>
 
                   <AnimatePresence>
@@ -312,16 +313,16 @@ export default function VerifyPage() {
                     className="btn-primary flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
                   >
                     <Download size={15} />
-                    <span>{downloading ? "Generating HD PNG..." : "Download HD PNG"}</span>
+                    <span>{downloading ? "Processing..." : "Download PNG"}</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDownload("svg")}
+                    onClick={() => handleDownload("pdf")}
                     disabled={downloading}
                     className="btn-outline flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
                   >
-                    <Download size={14} className="text-[#2563EB] dark:text-[#3B82F6]" />
-                    <span>Download SVG</span>
+                    <FileText size={15} className="text-[#2563EB] dark:text-[#3B82F6]" />
+                    <span>{downloading ? "Processing..." : "Download PDF"}</span>
                   </button>
                   <Link
                     href="/"

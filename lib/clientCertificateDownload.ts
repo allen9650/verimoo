@@ -1,6 +1,8 @@
+import { PDFDocument } from "pdf-lib";
+
 /**
- * Universal Client-Side 300 DPI HD PNG & SVG Certificate Downloader
- * Works in all modern browsers (desktop & mobile) with zero server dependencies.
+ * Universal Dual-Format (PNG & PDF) Certificate Downloader
+ * Works in all modern desktop and mobile browsers with automatic client-side fallbacks.
  */
 
 function triggerFileDownload(blob: Blob, filename: string): void {
@@ -12,21 +14,20 @@ function triggerFileDownload(blob: Blob, filename: string): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setTimeout(() => URL.revokeObjectURL(url), 2500);
 }
 
 /**
- * Renders an SVG markup string to a 300 DPI high-definition PNG using HTML5 Canvas
+ * Renders an SVG markup string to a high-definition 300 DPI PNG Blob using HTML5 Canvas
  */
-export function renderSvgToPngAndDownload(
+export function renderSvgToPngBlob(
   svgString: string,
-  filename: string,
   baseWidth: number = 1000,
   baseHeight: number = 700
-): Promise<void> {
+): Promise<Blob | null> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") {
-      resolve();
+      resolve(null);
       return;
     }
 
@@ -36,7 +37,7 @@ export function renderSvgToPngAndDownload(
       const targetWidth = Math.round(baseWidth * scale);
       const targetHeight = Math.round(baseHeight * scale);
 
-      // Clean SVG for Image embedding
+      // Clean SVG for safe Image loading
       const cleanedSvg = svgString
         .replace(/<style[\s\S]*?@import[\s\S]*?<\/style>/gi, "")
         .trim();
@@ -62,11 +63,8 @@ export function renderSvgToPngAndDownload(
 
             canvas.toBlob(
               (pngBlob) => {
-                if (pngBlob) {
-                  triggerFileDownload(pngBlob, `${filename}.png`);
-                }
                 URL.revokeObjectURL(url);
-                resolve();
+                resolve(pngBlob);
               },
               "image/png",
               1.0
@@ -77,54 +75,110 @@ export function renderSvgToPngAndDownload(
           console.error("Canvas draw error:", canvasErr);
         }
         URL.revokeObjectURL(url);
-        resolve();
+        resolve(null);
       };
 
       img.onerror = () => {
-        console.warn("SVG Image load error in Canvas, falling back to SVG blob download.");
-        triggerFileDownload(blob, `${filename}.svg`);
+        console.warn("SVG Image load error in Canvas.");
         URL.revokeObjectURL(url);
-        resolve();
+        resolve(null);
       };
 
       img.src = url;
     } catch (err) {
-      console.error("renderSvgToPngAndDownload fatal error:", err);
-      resolve();
+      console.error("renderSvgToPngBlob fatal error:", err);
+      resolve(null);
     }
   });
 }
 
-export async function downloadCertificateHD(
+/**
+ * Downloads the certificate in PNG or PDF format
+ *
+ * @param serialNumber - Certificate serial identifier
+ * @param format - "png" | "pdf"
+ * @param svgContent - Optional raw SVG markup for client-side rendering fallback
+ * @param width - Certificate width in pixels (default: 1000)
+ * @param height - Certificate height in pixels (default: 700)
+ */
+export async function downloadCertificate(
   serialNumber: string,
+  format: "png" | "pdf" = "png",
   svgContent?: string,
-  format: "png" | "svg" = "png",
   width: number = 1000,
   height: number = 700
 ): Promise<void> {
   if (typeof window === "undefined") return;
   const cleanSerial = (serialNumber || "certificate").trim();
 
-  // If format is SVG, download the SVG file directly
-  if (format === "svg") {
-    if (svgContent) {
-      const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
-      triggerFileDownload(blob, `${cleanSerial}.svg`);
-      return;
-    }
+  // --- 1. PDF Download ---
+  if (format === "pdf") {
+    // Attempt 1: Server-side compiled PDF
     try {
-      const res = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=svg-download`);
-      if (res.ok) {
-        const blob = await res.blob();
-        triggerFileDownload(blob, `${cleanSerial}.svg`);
-        return;
+      let serverRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=pdf`);
+      if (!serverRes.ok) {
+        serverRes = await fetch(`/api/certificate?serial=${encodeURIComponent(cleanSerial)}&format=pdf`);
       }
-    } catch {
-      // fallback
+      if (serverRes.ok && serverRes.headers.get("content-type")?.includes("application/pdf")) {
+        const blob = await serverRes.blob();
+        if (blob.size > 1000) {
+          triggerFileDownload(blob, `${cleanSerial}.pdf`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Server-side PDF download failed, trying client-side compiler:", err);
     }
+
+    // Attempt 2: Client-side PDF generation via Canvas + pdf-lib
+    let svgToRender = svgContent;
+    if (!svgToRender) {
+      try {
+        let svgRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=svg`);
+        if (!svgRes.ok) {
+          svgRes = await fetch(`/api/certificate?serial=${encodeURIComponent(cleanSerial)}&format=svg`);
+        }
+        if (svgRes.ok) svgToRender = await svgRes.text();
+      } catch (e) {
+        console.warn("Could not fetch SVG for client-side PDF:", e);
+      }
+    }
+
+    if (svgToRender) {
+      const pngBlob = await renderSvgToPngBlob(svgToRender, width, height);
+      if (pngBlob) {
+        try {
+          const arrayBuffer = await pngBlob.arrayBuffer();
+          const pdfDoc = await PDFDocument.create();
+          const ptWidth = Math.round((width * 72) / 96);
+          const ptHeight = Math.round((height * 72) / 96);
+          const page = pdfDoc.addPage([ptWidth, ptHeight]);
+          const embeddedImage = await pdfDoc.embedPng(arrayBuffer);
+          page.drawImage(embeddedImage, { x: 0, y: 0, width: ptWidth, height: ptHeight });
+          pdfDoc.setTitle(`Certificate — ${cleanSerial}`);
+          const pdfBytes = await pdfDoc.save();
+          const pdfBlob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
+          triggerFileDownload(pdfBlob, `${cleanSerial}.pdf`);
+          return;
+        } catch (pdfErr) {
+          console.error("Client-side pdf-lib generation error:", pdfErr);
+        }
+      }
+    }
+
+    // Fallback: direct window anchor navigation
+    const fallbackA = document.createElement("a");
+    fallbackA.href = `/api/certificate/${encodeURIComponent(cleanSerial)}?format=pdf`;
+    fallbackA.download = `${cleanSerial}.pdf`;
+    fallbackA.target = "_blank";
+    document.body.appendChild(fallbackA);
+    fallbackA.click();
+    document.body.removeChild(fallbackA);
+    return;
   }
 
-  // First attempt: Server-side Sharp HD PNG (if available)
+  // --- 2. PNG Download ---
+  // Attempt 1: Server-side 300 DPI PNG
   try {
     let serverRes = await fetch(`/api/certificate/${encodeURIComponent(cleanSerial)}?format=png`);
     if (!serverRes.ok) {
@@ -138,10 +192,10 @@ export async function downloadCertificateHD(
       }
     }
   } catch (err) {
-    console.warn("Server-side PNG download failed, using high-resolution browser canvas renderer:", err);
+    console.warn("Server-side PNG download failed, using client-side canvas renderer:", err);
   }
 
-  // Second attempt: High-resolution client-side HTML5 Canvas rasterization at 300 DPI
+  // Attempt 2: Client-side HTML5 Canvas rasterization at 300 DPI
   let svgToRender = svgContent;
   if (!svgToRender) {
     try {
@@ -149,17 +203,18 @@ export async function downloadCertificateHD(
       if (!svgRes.ok) {
         svgRes = await fetch(`/api/certificate?serial=${encodeURIComponent(cleanSerial)}&format=svg`);
       }
-      if (svgRes.ok) {
-        svgToRender = await svgRes.text();
-      }
+      if (svgRes.ok) svgToRender = await svgRes.text();
     } catch (e) {
       console.warn("Could not fetch SVG for canvas rendering:", e);
     }
   }
 
   if (svgToRender) {
-    await renderSvgToPngAndDownload(svgToRender, cleanSerial, width, height);
-    return;
+    const pngBlob = await renderSvgToPngBlob(svgToRender, width, height);
+    if (pngBlob) {
+      triggerFileDownload(pngBlob, `${cleanSerial}.png`);
+      return;
+    }
   }
 
   // Fallback: direct window anchor navigation
@@ -172,5 +227,13 @@ export async function downloadCertificateHD(
   document.body.removeChild(fallbackA);
 }
 
-export default downloadCertificateHD;
+// Backward-compatible alias
+export const downloadCertificateHD = (
+  serialNumber: string,
+  svgContent?: string,
+  format: "png" | "pdf" = "png",
+  width: number = 1000,
+  height: number = 700
+) => downloadCertificate(serialNumber, format, svgContent, width, height);
 
+export default downloadCertificate;

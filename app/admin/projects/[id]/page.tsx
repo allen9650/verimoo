@@ -16,6 +16,7 @@ import {
   Eye,
   ExternalLink,
   Download,
+  FileText,
   ArrowLeft,
   Layout,
   Users,
@@ -2149,13 +2150,13 @@ export default function ProjectDetailPage() {
                   href={`/api/certificate/${previewParticipant.serialNumber}?format=png`}
                   className="btn-primary flex items-center gap-1.5 text-xs shadow-xs"
                 >
-                  <Download size={14} /> Download HD PNG
+                  <Download size={14} /> Download PNG
                 </a>
                 <a
-                  href={`/api/certificate/${previewParticipant.serialNumber}?format=svg-download`}
+                  href={`/api/certificate/${previewParticipant.serialNumber}?format=pdf`}
                   className="btn-outline flex items-center gap-1.5 text-xs shadow-xs"
                 >
-                  <Download size={14} className="text-[#2563EB] dark:text-[#3B82F6]" /> Download SVG
+                  <FileText size={14} className="text-[#2563EB] dark:text-[#3B82F6]" /> Download PDF
                 </a>
                 <a
                   href={`/api/certificate/${previewParticipant.serialNumber}`}

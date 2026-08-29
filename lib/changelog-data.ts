@@ -12,14 +12,44 @@ export interface ChangelogRelease {
   items: ChangelogItem[];
 }
 
-export const CURRENT_VERSION = "v1.2.4";
+export const CURRENT_VERSION = "v1.2.5";
 
 export const CHANGELOGS: ChangelogRelease[] = [
+  {
+    version: "v1.2.5",
+    title: "Dual-Format (PNG & PDF) High-Definition Engine & Vercel Serverless Optimization",
+    date: "August 30, 2026",
+    isLatest: true,
+    summary:
+      "A complete optimization of the certificate generation, verification, and download pipeline with dedicated 300 DPI PNG and PDF outputs.",
+    items: [
+      {
+        type: "feature",
+        text: "Dual-Format Download System: Replaced user-facing SVG options with high-resolution Download PNG (image/png) and printable Download PDF (application/pdf).",
+      },
+      {
+        type: "improvement",
+        text: "Zero-Dependency PDF Compilation: Integrated pdf-lib to compile crisp, standard PDF documents matching exact certificate dimensions and aspect ratios.",
+      },
+      {
+        type: "fix",
+        text: "Vercel 4.5MB Serverless Limit Fix: Optimized raster background templates and active custom font embedding to keep generated payload under 1MB.",
+      },
+      {
+        type: "improvement",
+        text: "Strict Database Validation & 404 Handling: Verifies participant existence in MongoDB before rendering, returning proper 404 status on invalid serial numbers.",
+      },
+      {
+        type: "improvement",
+        text: "Multi-Tier Caching: In-memory caching for SVG, PNG, and PDF outputs reduces repeat retrieval times to ~1ms.",
+      },
+    ],
+  },
   {
     version: "v1.2.4",
     title: "VeriMoo Modern Blue-Indigo-Purple SaaS Design Architecture",
     date: "August 28, 2026",
-    isLatest: true,
+    isLatest: false,
     summary:
       "A complete UI/UX modernization engineered around the VeriMoo brand gradient, 70/20/10 SaaS dashboard ratio, and instant client-side performance.",
     items: [

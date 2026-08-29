@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Download,
+  FileText,
   ExternalLink,
   ShieldCheck,
   AlertCircle,
@@ -15,7 +16,7 @@ import { Button, Input, Card, Badge } from "@/components/ui";
 import { ProgressBar } from "@/components/progress-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WhoWeAreSection, LinkedinIcon, GithubIcon } from "@/components/who-we-are-section";
-import { downloadCertificateHD } from "@/lib/clientCertificateDownload";
+import { downloadCertificate } from "@/lib/clientCertificateDownload";
 import Link from "next/link";
 import Image from "next/image";
 import type { VerifyResult } from "@/lib/types";
@@ -82,12 +83,12 @@ export default function HomePage() {
     setImageError(false);
   }
 
-  async function handleDownload(format: "png" | "svg" = "png") {
+  async function handleDownload(format: "png" | "pdf" = "png") {
     const targetSerial = (info?.serialNumber || serial).trim();
     if (!targetSerial) return;
     setDownloading(true);
     try {
-      await downloadCertificateHD(targetSerial, svgMarkup, format);
+      await downloadCertificate(targetSerial, format, svgMarkup);
     } catch (err) {
       console.error("Download failed:", err);
     } finally {
@@ -387,16 +388,16 @@ export default function HomePage() {
                           className="btn-primary text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >
                           <Download size={15} />
-                          <span>{downloading ? "Generating HD PNG..." : "Download HD PNG"}</span>
+                          <span>{downloading ? "Processing..." : "Download PNG"}</span>
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDownload("svg")}
+                          onClick={() => handleDownload("pdf")}
                           disabled={downloading}
                           className="btn-outline text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >
-                          <Download size={14} className="text-[#2563EB] dark:text-[#3B82F6]" />
-                          <span>Download SVG</span>
+                          <FileText size={15} className="text-[#2563EB] dark:text-[#3B82F6]" />
+                          <span>{downloading ? "Processing..." : "Download PDF"}</span>
                         </button>
                         <Link
                           className="btn-outline text-xs sm:text-sm"
@@ -408,7 +409,7 @@ export default function HomePage() {
                       </div>
 
                       <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
-                        Ultra HD <strong>300 DPI PNG</strong>
+                        Official <strong>PNG &amp; PDF</strong> Formats
                       </p>
                     </div>
                   </div>
