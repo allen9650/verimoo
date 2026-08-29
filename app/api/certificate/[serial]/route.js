@@ -92,22 +92,39 @@ export async function GET(req, { params }) {
       const pngCacheKey = `png:${participant.serialNumber}:${participant.updatedAt?.getTime() || 0}:${project.updatedAt?.getTime() || 0}`;
       let pngBuffer = cacheGet(pngCacheKey);
       if (!pngBuffer) {
-        pngBuffer = await svgToPngBuffer(svg, project.templateWidth || 1000, project.templateHeight || 700);
-        if (pngBuffer) {
-          cacheSet(pngCacheKey, pngBuffer);
+        try {
+          pngBuffer = await svgToPngBuffer(svg, project.templateWidth || 1000, project.templateHeight || 700);
+          if (pngBuffer) {
+            cacheSet(pngCacheKey, pngBuffer);
+          }
+        } catch (rasterErr) {
+          console.warn("Could not generate server PNG raster, falling back to SVG delivery:", rasterErr);
         }
       }
 
-      const filename = `${serialClean}.png`;
+      if (pngBuffer) {
+        const filename = `${serialClean}.png`;
+        return new Response(pngBuffer, {
+          status: 200,
+          headers: {
+            "Content-Type": "image/png",
+            "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Access-Control-Allow-Origin": "*",
+            "Vary": "Accept, Accept-Encoding",
+          },
+        });
+      }
 
-      return new Response(pngBuffer, {
+      // If server-side PNG generation is unavailable in serverless environment, return SVG attachment
+      const filename = `${serialClean}.svg`;
+      return new NextResponse(svg, {
         status: 200,
         headers: {
-          "Content-Type": "image/png",
+          "Content-Type": "image/svg+xml; charset=utf-8",
           "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": "no-cache",
           "Access-Control-Allow-Origin": "*",
-          "Vary": "Accept, Accept-Encoding",
         },
       });
     }

@@ -5,3 +5,4 @@ export async function GET(req) {
   const serial = (searchParams.get("serial") || searchParams.get("s") || "").trim();
   return getVerify(req, { params: Promise.resolve({ serial }) });
 }
+
