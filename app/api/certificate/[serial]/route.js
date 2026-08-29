@@ -118,24 +118,31 @@ export async function GET(req, { params }) {
             cacheSet(pdfCacheKey, pdfBuffer);
           }
         } catch (pdfErr) {
-          console.error("PDF generation error:", pdfErr);
+          console.warn("Server PDF compilation deferred to client fallback:", pdfErr);
         }
       }
 
-      if (!pdfBuffer) {
-        return NextResponse.json(
-          { error: "Failed to compile PDF document." },
-          { status: 500 }
-        );
+      if (pdfBuffer) {
+        const filename = `${serialClean}.pdf`;
+        return new Response(pdfBuffer, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+            "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
       }
 
-      const filename = `${serialClean}.pdf`;
-      return new Response(pdfBuffer, {
+      // If server raster is unavailable, deliver SVG with 200 so client Canvas + pdf-lib compiles PDF in browser
+      const filename = `${serialClean}.svg`;
+      return new NextResponse(svg, {
         status: 200,
         headers: {
-          "Content-Type": "application/pdf",
+          "Content-Type": "image/svg+xml; charset=utf-8",
           "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Cache-Control": "no-cache",
           "Access-Control-Allow-Origin": "*",
         },
       });
@@ -152,24 +159,31 @@ export async function GET(req, { params }) {
             cacheSet(pngCacheKey, pngBuffer);
           }
         } catch (rasterErr) {
-          console.error("PNG rasterization error:", rasterErr);
+          console.warn("Server PNG rasterization deferred to client fallback:", rasterErr);
         }
       }
 
-      if (!pngBuffer) {
-        return NextResponse.json(
-          { error: "Failed to generate PNG image." },
-          { status: 500 }
-        );
+      if (pngBuffer) {
+        const filename = `${serialClean}.png`;
+        return new Response(pngBuffer, {
+          status: 200,
+          headers: {
+            "Content-Type": "image/png",
+            "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+            "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
       }
 
-      const filename = `${serialClean}.png`;
-      return new Response(pngBuffer, {
+      // Fallback: deliver SVG attachment so client Canvas can rasterize
+      const filename = `${serialClean}.svg`;
+      return new NextResponse(svg, {
         status: 200,
         headers: {
-          "Content-Type": "image/png",
+          "Content-Type": "image/svg+xml; charset=utf-8",
           "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Cache-Control": "no-cache",
           "Access-Control-Allow-Origin": "*",
         },
       });

@@ -42,5 +42,8 @@
     "postcss": "8.5.16",
     "tailwindcss": "4.3.2",
     "typescript": "6.0.3"
+  },
+  "optionalDependencies": {
+    "@img/sharp-linux-x64": "^0.33.5"
   }
 }
