@@ -15,6 +15,7 @@ import { Button, Input, Card, Badge } from "@/components/ui";
 import { ProgressBar } from "@/components/progress-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WhoWeAreSection, LinkedinIcon, GithubIcon } from "@/components/who-we-are-section";
+import { downloadCertificateHD } from "@/lib/clientCertificateDownload";
 import Link from "next/link";
 import Image from "next/image";
 import type { VerifyResult } from "@/lib/types";
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [serial, setSerial] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "found" | "notfound">("idle");
   const [info, setInfo] = useState<VerifyResult | null>(null);
+  const [svgMarkup, setSvgMarkup] = useState<string>("");
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -34,6 +36,7 @@ export default function HomePage() {
     setStatus("loading");
     setImageLoaded(false);
     setImageError(false);
+    setSvgMarkup("");
 
     try {
       const res = await fetch(`/api/verify/${encodeURIComponent(query)}`);
@@ -41,6 +44,17 @@ export default function HomePage() {
       if (res.ok && data.valid) {
         setInfo(data);
         setStatus("found");
+
+        // Fetch SVG markup for reliable direct rendering and 300 DPI canvas conversion
+        fetch(`/api/certificate/${encodeURIComponent(data.serialNumber || query)}?format=svg`)
+          .then((r) => (r.ok ? r.text() : ""))
+          .then((svg) => {
+            if (svg && svg.includes("<svg")) {
+              setSvgMarkup(svg);
+              setImageLoaded(true);
+            }
+          })
+          .catch((err) => console.warn("SVG markup fetch warning:", err));
       } else {
         setInfo(null);
         setStatus("notfound");
@@ -55,41 +69,19 @@ export default function HomePage() {
     setSerial("");
     setStatus("idle");
     setInfo(null);
+    setSvgMarkup("");
     setImageLoaded(false);
     setImageError(false);
   }
 
-  async function handleDownload(format: "png" | "svg" = "png", serialNumber?: string) {
-    const targetSerial = (serialNumber || info?.serialNumber || serial).trim();
+  async function handleDownload(format: "png" | "svg" = "png") {
+    const targetSerial = (info?.serialNumber || serial).trim();
     if (!targetSerial) return;
     setDownloading(true);
-
-    const formatParam = format === "svg" ? "svg-download" : "png";
-    const extension = format === "svg" ? "svg" : "png";
-
     try {
-      const res = await fetch(`/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`);
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${targetSerial}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      await downloadCertificateHD(targetSerial, svgMarkup, format);
     } catch (err) {
-      console.warn("Blob download failed, falling back to direct anchor:", err);
-      const fallbackLink = document.createElement("a");
-      fallbackLink.href = `/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`;
-      fallbackLink.download = `${targetSerial}.${extension}`;
-      fallbackLink.target = "_blank";
-      document.body.appendChild(fallbackLink);
-      fallbackLink.click();
-      document.body.removeChild(fallbackLink);
+      console.error("Download failed:", err);
     } finally {
       setDownloading(false);
     }
@@ -164,7 +156,6 @@ export default function HomePage() {
       <main className="flex-1">
         <section className="relative overflow-hidden py-12 sm:py-20">
           <div className="mx-auto max-w-4xl px-4 text-center">
-
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -325,13 +316,14 @@ export default function HomePage() {
                     </div>
 
                     {/* SVG Certificate Preview Frame */}
-                    <div className="relative min-h-[180px] w-full overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 sm:p-4 text-center dark:border-[#27272a] dark:bg-black">
-                      {!imageLoaded && !imageError && (
+                    <div className="relative min-h-[180px] w-full overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 sm:p-4 text-center dark:border-[#27272a] dark:bg-black flex items-center justify-center">
+                      {!imageLoaded && !imageError && !svgMarkup && (
                         <div className="flex h-56 items-center justify-center">
                           <ProgressBar label="Rendering high-resolution vector certificate..." />
                         </div>
                       )}
-                      {imageError && (
+
+                      {imageError && !svgMarkup && (
                         <div className="p-8 text-center text-sm text-[#64748B] dark:text-[#94A3B8] space-y-3">
                           <Award className="mx-auto h-8 w-8 text-slate-400" />
                           <p>Certificate rendered securely. You can view or download the official file below.</p>
@@ -340,6 +332,13 @@ export default function HomePage() {
                             onClick={() => {
                               setImageError(false);
                               setImageLoaded(false);
+                              if (info.serialNumber) {
+                                fetch(`/api/certificate/${encodeURIComponent(info.serialNumber)}?format=svg`)
+                                  .then((r) => r.text())
+                                  .then((s) => {
+                                    if (s && s.includes("<svg")) setSvgMarkup(s);
+                                  });
+                              }
                             }}
                             className="btn-outline inline-flex items-center gap-1.5 text-xs py-1.5 px-3 cursor-pointer"
                           >
@@ -348,17 +347,26 @@ export default function HomePage() {
                           </button>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic SVG Certificate */}
-                      <img
-                        key={`${info.serialNumber}-${imageError ? "retry" : "main"}`}
-                        src={`/api/certificate/${encodeURIComponent(info.serialNumber ?? "")}?format=svg`}
-                        alt={`Certificate for ${info.name}`}
-                        onLoad={() => setImageLoaded(true)}
-                        onError={() => setImageError(true)}
-                        className={`mx-auto max-h-[65vh] w-auto max-w-full rounded-lg shadow-sm object-contain transition-opacity duration-200 ${
-                          imageLoaded && !imageError ? "opacity-100 block" : "hidden"
-                        }`}
-                      />
+
+                      {/* Direct Inline Vector Rendering (Fastest & Most Reliable in Production) */}
+                      {svgMarkup ? (
+                        <div
+                          className="w-full flex items-center justify-center overflow-auto max-h-[65vh] rounded-lg shadow-sm [&>svg]:max-h-[65vh] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:h-auto"
+                          dangerouslySetInnerHTML={{ __html: svgMarkup }}
+                        />
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element -- Dynamic SVG Certificate Fallback */
+                        <img
+                          key={`${info.serialNumber}-${imageError ? "retry" : "main"}`}
+                          src={`/api/certificate/${encodeURIComponent(info.serialNumber ?? "")}?format=svg`}
+                          alt={`Certificate for ${info.name}`}
+                          onLoad={() => setImageLoaded(true)}
+                          onError={() => setImageError(true)}
+                          className={`mx-auto max-h-[65vh] w-auto max-w-full rounded-lg shadow-sm object-contain transition-opacity duration-200 ${
+                            imageLoaded && !imageError ? "opacity-100 block" : "hidden"
+                          }`}
+                        />
+                      )}
                     </div>
 
                     {/* Action Buttons */}
@@ -366,16 +374,16 @@ export default function HomePage() {
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <button
                           type="button"
-                          onClick={() => handleDownload("png", info.serialNumber)}
+                          onClick={() => handleDownload("png")}
                           disabled={downloading}
                           className="btn-primary text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >
                           <Download size={15} />
-                          <span>{downloading ? "Downloading HD PNG..." : "Download HD PNG"}</span>
+                          <span>{downloading ? "Generating HD PNG..." : "Download HD PNG"}</span>
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDownload("svg", info.serialNumber)}
+                          onClick={() => handleDownload("svg")}
                           disabled={downloading}
                           className="btn-outline text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >

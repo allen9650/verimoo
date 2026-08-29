@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProgressBar } from "@/components/progress-bar";
 import { VERIFICATION_THEMES } from "@/lib/verificationThemes";
+import { downloadCertificateHD } from "@/lib/clientCertificateDownload";
 import type { VerifyResult } from "@/lib/types";
 
 const DEFAULT_THEME = {
@@ -36,6 +37,7 @@ const DEFAULT_THEME = {
 export default function VerifyPage() {
   const { serial } = useParams<{ serial: string }>();
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [svgMarkup, setSvgMarkup] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -46,7 +48,20 @@ export default function VerifyPage() {
     if (!serial) return;
     fetch(`/api/verify/${encodeURIComponent(serial)}`)
       .then((r) => r.json())
-      .then(setResult)
+      .then((data) => {
+        setResult(data);
+        if (data && data.valid) {
+          fetch(`/api/certificate/${encodeURIComponent(data.serialNumber || serial)}?format=svg`)
+            .then((r) => (r.ok ? r.text() : ""))
+            .then((svg) => {
+              if (svg && svg.includes("<svg")) {
+                setSvgMarkup(svg);
+                setImageLoaded(true);
+              }
+            })
+            .catch(() => {});
+        }
+      })
       .catch(() => setResult({ valid: false, message: "Network error occurred." }))
       .finally(() => setLoading(false));
   }, [serial]);
@@ -56,32 +71,10 @@ export default function VerifyPage() {
     if (!targetSerial) return;
     setDownloading(true);
 
-    const formatParam = format === "svg" ? "svg-download" : "png";
-    const extension = format === "svg" ? "svg" : "png";
-
     try {
-      const res = await fetch(`/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`);
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${targetSerial}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      await downloadCertificateHD(targetSerial, svgMarkup, format);
     } catch (err) {
-      console.warn("Blob download fallback:", err);
-      const fallbackLink = document.createElement("a");
-      fallbackLink.href = `/api/certificate/${encodeURIComponent(targetSerial)}?format=${formatParam}`;
-      fallbackLink.download = `${targetSerial}.${extension}`;
-      fallbackLink.target = "_blank";
-      document.body.appendChild(fallbackLink);
-      fallbackLink.click();
-      document.body.removeChild(fallbackLink);
+      console.error("Download error:", err);
     } finally {
       setDownloading(false);
     }
@@ -251,7 +244,7 @@ export default function VerifyPage() {
                       <Eye size={13} />
                       <span>{showPreview ? "Hide Certificate Preview" : "Show Certificate Preview"}</span>
                     </button>
-                    <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">Vector SVG format</span>
+                    <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">Vector SVG &amp; 300 DPI PNG</span>
                   </div>
 
                   <AnimatePresence>
@@ -260,29 +253,37 @@ export default function VerifyPage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 text-center dark:border-[#27272a] dark:bg-black"
+                        className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-slate-100/70 p-2 text-center dark:border-[#27272a] dark:bg-black flex items-center justify-center min-h-[160px]"
                       >
-                        {!imageLoaded && !imageError && (
+                        {!imageLoaded && !imageError && !svgMarkup && (
                           <div className="flex h-44 items-center justify-center">
-                            <ProgressBar label="Loading certificate SVG preview..." />
+                            <ProgressBar label="Loading certificate vector preview..." />
                           </div>
                         )}
-                        {imageError && (
+                        {imageError && !svgMarkup && (
                           <div className="p-6 text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
                             <Award className="mx-auto h-6 w-6 text-slate-400 mb-1" />
                             <p>Certificate rendered securely. You can download the official file below.</p>
                           </div>
                         )}
-                        {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic SVG Certificate */}
-                        <img
-                          src={`/api/certificate/${encodeURIComponent(result.serialNumber ?? "")}?format=svg`}
-                          alt={`Certificate for ${result.name}`}
-                          onLoad={() => setImageLoaded(true)}
-                          onError={() => setImageError(true)}
-                          className={`mx-auto max-h-[50vh] w-auto max-w-full rounded-lg shadow-xs object-contain transition-opacity duration-200 ${
-                            imageLoaded && !imageError ? "opacity-100 block" : "hidden"
-                          }`}
-                        />
+
+                        {svgMarkup ? (
+                          <div
+                            className="w-full flex items-center justify-center overflow-auto max-h-[50vh] rounded-lg shadow-xs [&>svg]:max-h-[50vh] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:h-auto"
+                            dangerouslySetInnerHTML={{ __html: svgMarkup }}
+                          />
+                        ) : (
+                          /* eslint-disable-next-line @next/next/no-img-element -- Dynamic SVG Certificate */
+                          <img
+                            src={`/api/certificate/${encodeURIComponent(result.serialNumber ?? "")}?format=svg`}
+                            alt={`Certificate for ${result.name}`}
+                            onLoad={() => setImageLoaded(true)}
+                            onError={() => setImageError(true)}
+                            className={`mx-auto max-h-[50vh] w-auto max-w-full rounded-lg shadow-xs object-contain transition-opacity duration-200 ${
+                              imageLoaded && !imageError ? "opacity-100 block" : "hidden"
+                            }`}
+                          />
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -297,7 +298,7 @@ export default function VerifyPage() {
                     className="btn-primary flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
                   >
                     <Download size={15} />
-                    <span>{downloading ? "Downloading HD PNG..." : "Download HD PNG"}</span>
+                    <span>{downloading ? "Generating HD PNG..." : "Download HD PNG"}</span>
                   </button>
                   <button
                     type="button"
