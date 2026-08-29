@@ -135,13 +135,12 @@ export async function GET(req, { params }) {
         });
       }
 
-      // If server raster is unavailable, deliver SVG with 200 so client Canvas + pdf-lib compiles PDF in browser
-      const filename = `${serialClean}.svg`;
+      // If server raster is unavailable, return SVG with inline disposition so client can compile PDF
       return new NextResponse(svg, {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml; charset=utf-8",
-          "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+          "Content-Disposition": "inline",
           "Cache-Control": "no-cache",
           "Access-Control-Allow-Origin": "*",
         },
@@ -176,13 +175,12 @@ export async function GET(req, { params }) {
         });
       }
 
-      // Fallback: deliver SVG attachment so client Canvas can rasterize
-      const filename = `${serialClean}.svg`;
+      // If server raster is unavailable, return SVG inline so client can render PNG
       return new NextResponse(svg, {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml; charset=utf-8",
-          "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+          "Content-Disposition": "inline",
           "Cache-Control": "no-cache",
           "Access-Control-Allow-Origin": "*",
         },

@@ -29,6 +29,7 @@ import { Modal } from "@/components/modal";
 import { ProgressBar } from "@/components/progress-bar";
 import { formatDate, DATE_FORMAT_OPTIONS } from "@/lib/dateFormat";
 import { VERIFICATION_THEME_OPTIONS } from "@/lib/verificationThemes";
+import { downloadCertificate } from "@/lib/clientCertificateDownload";
 import type { CertificateField, Project, Participant, ImportResult, TextTemplate } from "@/lib/types";
 
 const BUILTIN_KEYS = ["participantName", "serialNumber", "courseTitle", "date", "orgName"];
@@ -2146,18 +2147,20 @@ export default function ProjectDetailPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
               <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href={`/api/certificate/${previewParticipant.serialNumber}?format=png`}
-                  className="btn-primary flex items-center gap-1.5 text-xs shadow-xs"
+                <button
+                  type="button"
+                  onClick={() => downloadCertificate(previewParticipant.serialNumber, "png")}
+                  className="btn-primary flex items-center gap-1.5 text-xs shadow-xs cursor-pointer"
                 >
                   <Download size={14} /> Download PNG
-                </a>
-                <a
-                  href={`/api/certificate/${previewParticipant.serialNumber}?format=pdf`}
-                  className="btn-outline flex items-center gap-1.5 text-xs shadow-xs"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadCertificate(previewParticipant.serialNumber, "pdf")}
+                  className="btn-outline flex items-center gap-1.5 text-xs shadow-xs cursor-pointer"
                 >
                   <FileText size={14} className="text-[#2563EB] dark:text-[#3B82F6]" /> Download PDF
-                </a>
+                </button>
                 <a
                   href={`/api/certificate/${previewParticipant.serialNumber}`}
                   target="_blank"

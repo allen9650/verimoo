@@ -46,11 +46,19 @@ export async function GET(req, { params }) {
   });
 
   for (const participant of participants) {
-    const verifyUrl = `${baseUrl}/verify/${participant.serialNumber}`;
+    const verifyUrl = `${baseUrl}/verify/${encodeURIComponent(participant.serialNumber)}`;
     const svg = await buildCertificateSVG({ project, participant, verifyUrl });
-    const pngBuffer = await svgToPngBuffer(svg, project.templateWidth, project.templateHeight);
     const safeName = participant.serialNumber.replace(/[^a-z0-9_-]+/gi, "_");
-    archive.append(pngBuffer, { name: `${safeName}.png` });
+    try {
+      const pngBuffer = await svgToPngBuffer(svg, project.templateWidth, project.templateHeight);
+      if (pngBuffer && pngBuffer.length > 0) {
+        archive.append(pngBuffer, { name: `${safeName}.png` });
+      } else {
+        archive.append(Buffer.from(svg), { name: `${safeName}.svg` });
+      }
+    } catch {
+      archive.append(Buffer.from(svg), { name: `${safeName}.svg` });
+    }
   }
 
   archive.finalize();
