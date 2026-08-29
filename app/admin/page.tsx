@@ -16,6 +16,7 @@ import {
   Sparkles,
   ArrowRight,
   Users,
+  Laptop,
 } from "lucide-react";
 import { Button, Input, Card } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -174,6 +175,17 @@ export default function AdminDashboard() {
           <Plus size={16} />
           <span>New Project</span>
         </Button>
+      </div>
+
+      {/* Mobile Screen Helper Notice */}
+      <div className="md:hidden rounded-xl border border-blue-200/80 bg-blue-50/70 p-3 text-xs text-blue-900 shadow-xs dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300 flex items-start gap-2.5">
+        <Laptop size={16} className="mt-0.5 shrink-0 text-[#2563EB]" />
+        <div className="leading-relaxed">
+          <span className="font-semibold">Desktop / Laptop Recommended</span>:
+          <span className="text-blue-800/90 dark:text-blue-300/90 ml-1">
+            For better view, management, and full drag-and-drop certificate design studio tools, use a desktop or laptop. Field positions are locked on mobile devices.
+          </span>
+        </div>
       </div>
 
       {/* Metrics Row */}

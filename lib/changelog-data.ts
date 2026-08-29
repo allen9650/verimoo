@@ -44,6 +44,14 @@ export const CHANGELOGS: ChangelogRelease[] = [
         text: "Team Role Architecture: Added primary selection between Super Admin (unlimited platform-wide project view and administration) and Simple User (scoped project view with custom creation limits and permissions).",
       },
       {
+        type: "feature",
+        text: "Added 'Who We Are' Ahsan & Team Showcase & Engineering Quote with direct LinkedIn and GitHub links.",
+      },
+      {
+        type: "improvement",
+        text: "Mobile View Protection: Added desktop editing recommendation banner and locked canvas component positions as fixed in mobile view to prevent displacement.",
+      },
+      {
         type: "improvement",
         text: "Updated ProgressBar to animate with the VeriMoo tri-color brand gradient with zero layout delay.",
       },

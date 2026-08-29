@@ -14,6 +14,7 @@ import {
 import { Button, Input, Card, Badge } from "@/components/ui";
 import { ProgressBar } from "@/components/progress-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WhoWeAreSection, LinkedinIcon, GithubIcon } from "@/components/who-we-are-section";
 import Link from "next/link";
 import Image from "next/image";
 import type { VerifyResult } from "@/lib/types";
@@ -61,7 +62,7 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col bg-[#F8FAFC] dark:bg-black">
       {/* Sticky Header with VeriMoo Transparent Logo */}
       <header className="sticky top-0 z-40 w-full border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md dark:border-[#27272a] dark:bg-black/90">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
             className="flex items-center gap-2.5 transition hover:opacity-90"
@@ -80,13 +81,45 @@ export default function HomePage() {
               VeriMoo
             </span>
           </Link>
+
           <div className="flex items-center gap-2 sm:gap-3">
+            <a
+              href="#about"
+              className="rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-[#2563EB] transition dark:text-slate-300 dark:hover:bg-[#18181c] dark:hover:text-white"
+            >
+              Who We Are
+            </a>
+
             <Link
               href="/login"
-              className="rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-[#2563EB] transition dark:text-slate-300 dark:hover:bg-[#18181c] dark:hover:text-white"
+              className="rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-[#2563EB] transition dark:text-slate-300 dark:hover:bg-[#18181c] dark:hover:text-white"
             >
               Admin Login
             </Link>
+
+            <div className="hidden xs:flex items-center gap-1.5 border-l border-slate-200 dark:border-[#27272a] pl-2.5">
+              <a
+                href="https://www.linkedin.com/in/ahsan-raza8hbb/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn Profile"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#0A66C2] transition dark:text-slate-400 dark:hover:bg-[#18181c] dark:hover:text-white"
+                title="LinkedIn Profile (Ahsan)"
+              >
+                <LinkedinIcon size={16} />
+              </a>
+              <a
+                href="https://github.com/allen9650/verimoo"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub Repository"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-black transition dark:text-slate-400 dark:hover:bg-[#18181c] dark:hover:text-white"
+                title="GitHub Repository"
+              >
+                <GithubIcon size={16} />
+              </a>
+            </div>
+
             <ThemeToggle />
           </div>
         </div>
@@ -281,22 +314,48 @@ export default function HomePage() {
             )}
           </AnimatePresence>
         </section>
+
+        {/* Who We Are & Ahsan & Team Showcase */}
+        <WhoWeAreSection />
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#E2E8F0] bg-white/70 py-6 text-center text-xs text-[#64748B] dark:border-[#27272a] dark:bg-black/80 dark:text-[#94A3B8]">
-        <div className="mx-auto flex max-w-5xl flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex items-center gap-2">
+      <footer className="border-t border-[#E2E8F0] bg-white/70 py-8 text-xs text-[#64748B] dark:border-[#27272a] dark:bg-black/80 dark:text-[#94A3B8]">
+        <div className="mx-auto flex max-w-6xl flex-col md:flex-row items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex items-center gap-2.5">
             <Image
               src="/verimoo.png"
               alt="VeriMoo"
-              width={20}
-              height={20}
+              width={22}
+              height={22}
               className="h-5 w-auto object-contain"
             />
-            <span>© {new Date().getFullYear()} VeriMoo. Secure Digital Certificate Verification.</span>
+            <span>
+              © {new Date().getFullYear()} <strong>Ahsan & Team</strong> · <strong>VeriMoo</strong> Platform
+            </span>
           </div>
-          <div className="flex items-center gap-4 text-xs font-medium">
+
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-medium">
+            <a
+              href="https://www.linkedin.com/in/ahsan-raza8hbb/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#2563EB] transition flex items-center gap-1.5"
+            >
+              <LinkedinIcon size={14} className="text-[#0A66C2]" />
+              <span>LinkedIn (Ahsan)</span>
+            </a>
+            <span>·</span>
+            <a
+              href="https://github.com/allen9650/verimoo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#2563EB] transition flex items-center gap-1.5"
+            >
+              <GithubIcon size={14} />
+              <span>GitHub Repository</span>
+            </a>
+            <span>·</span>
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("open-changelog"))}

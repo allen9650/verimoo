@@ -20,6 +20,8 @@ import {
   Layout,
   Users,
   Settings as SettingsIcon,
+  Laptop,
+  Lock,
 } from "lucide-react";
 import { Button, Input, Card, Badge } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -224,11 +226,29 @@ export default function ProjectDetailPage() {
     };
   }, [tab, project?.templateWidth, project?.templateHeight, project?.templateSvg, project?.templateImage?.data]);
 
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+
+  useEffect(() => {
+    function checkScreen() {
+      setIsMobileScreen(window.innerWidth < 768);
+    }
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
+
   // Start dragging a field with smooth click-offset calculation to prevent snapping.
   function handleFieldPointerDown(fieldId: string, e: React.PointerEvent) {
     e.stopPropagation();
-    dragField.current = fieldId;
     setSelectedFieldId(fieldId);
+
+    // On mobile devices, keep certificate components locked as fixed to protect template design
+    if (isMobileScreen || (typeof window !== "undefined" && window.innerWidth < 768)) {
+      dragField.current = null;
+      return;
+    }
+
+    dragField.current = fieldId;
 
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -762,8 +782,28 @@ export default function ProjectDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="grid gap-6 lg:grid-cols-3"
+            className="space-y-4"
           >
+            {/* Mobile View Advisory Banner */}
+            <div className="md:hidden rounded-xl border border-amber-200/90 bg-amber-50/90 p-3.5 text-amber-900 shadow-xs dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+              <div className="flex items-start gap-2.5">
+                <Laptop size={18} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="text-xs leading-relaxed">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold">Desktop / Laptop Recommended</span>
+                    <span className="inline-flex items-center gap-1 rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-900/70 dark:text-amber-200">
+                      <Lock size={10} />
+                      <span>Canvas Locked on Mobile</span>
+                    </span>
+                  </div>
+                  <p className="mt-1 text-amber-800/90 dark:text-amber-300/90">
+                    For better view, management, and full drag-and-drop customization, please use a <strong>desktop or laptop</strong> to edit certificates. Field positions are <strong>fixed & locked</strong> on mobile devices to prevent accidental displacement.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2 min-w-0">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2.5">
                 <h2 className="font-semibold text-sm sm:text-base">Certificate Template</h2>
@@ -894,6 +934,12 @@ export default function ProjectDetailPage() {
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                  {/* Canvas locked indicator on mobile */}
+                  <div className="flex md:hidden items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-900/50 rounded-md px-1.5 py-0.5">
+                    <Lock size={10} />
+                    <span>Positions Fixed on Mobile</span>
+                  </div>
+
                   <span>
                     Original: {project.templateWidth} × {project.templateHeight} px
                   </span>
@@ -947,11 +993,13 @@ export default function ProjectDetailPage() {
                           <div
                             key={f.id}
                             onPointerDown={(e) => handleFieldPointerDown(f.id, e)}
-                            className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing items-center justify-center border-2 border-dashed bg-primary/10 text-[9px] font-medium text-primary select-none transition-colors ${
+                            className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center border-2 border-dashed bg-primary/10 text-[9px] font-medium text-primary select-none transition-colors ${
+                              isMobileScreen ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+                            } ${
                               isSelected ? "border-primary ring-2 ring-primary/40 shadow-sm z-20" : "border-primary/60 hover:border-primary z-10"
                             }`}
                             style={{ left: `${f.x}%`, top: `${f.y}%`, width: size, height: size }}
-                            title={`Drag to reposition · QR code (X: ${Math.round(f.x * 10) / 10}%, Y: ${Math.round(f.y * 10) / 10}%)`}
+                            title={`${isMobileScreen ? "Tap to select (use desktop/laptop to drag)" : "Drag to reposition"} · QR code (X: ${Math.round(f.x * 10) / 10}%, Y: ${Math.round(f.y * 10) / 10}%)`}
                           >
                             <span>▦ QR</span>
                             {isSelected && (
@@ -969,11 +1017,13 @@ export default function ProjectDetailPage() {
                           <div
                             key={f.id}
                             onPointerDown={(e) => handleFieldPointerDown(f.id, e)}
-                            className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing items-center justify-center border-2 border-dashed select-none transition-colors ${
+                            className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center border-2 border-dashed select-none transition-colors ${
+                              isMobileScreen ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+                            } ${
                               isSelected ? "border-primary ring-2 ring-primary/40 shadow-sm z-20" : "border-primary/40 hover:border-primary/80 z-10"
                             }`}
                             style={{ left: `${f.x}%`, top: `${f.y}%`, width: size, height: size }}
-                            title={`Drag to reposition · Logo (X: ${Math.round(f.x * 10) / 10}%, Y: ${Math.round(f.y * 10) / 10}%)`}
+                            title={`${isMobileScreen ? "Tap to select (use desktop/laptop to drag)" : "Drag to reposition"} · Logo (X: ${Math.round(f.x * 10) / 10}%, Y: ${Math.round(f.y * 10) / 10}%)`}
                           >
                             {project.branding?.logoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element -- data-URI logo preview
@@ -994,7 +1044,9 @@ export default function ProjectDetailPage() {
                         <div
                           key={f.id}
                           onPointerDown={(e) => handleFieldPointerDown(f.id, e)}
-                          className={`absolute cursor-grab active:cursor-grabbing whitespace-nowrap select-none ${
+                          className={`absolute whitespace-nowrap select-none ${
+                            isMobileScreen ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+                          } ${
                             isSelected ? "outline-dashed outline-2 outline-primary/80 ring-2 ring-primary/20 rounded px-1 -mx-1 z-20" : "hover:outline-dashed hover:outline-1 hover:outline-primary/40 z-10"
                           }`}
                           style={{
@@ -1371,6 +1423,7 @@ export default function ProjectDetailPage() {
                 </AnimatePresence>
               </div>
             </Card>
+            </div>
           </motion.div>
         )}
 

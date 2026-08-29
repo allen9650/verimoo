@@ -143,8 +143,33 @@ export default function LoginPage() {
         </motion.div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
-        <p>© {new Date().getFullYear()} VeriMoo Certificate Studio</p>
+      <footer className="py-5 text-center text-xs text-[#64748B] dark:text-[#94A3B8] border-t border-[#E2E8F0] dark:border-[#27272a] bg-white/40 dark:bg-black/40">
+        <div className="mx-auto max-w-sm flex flex-col items-center gap-2">
+          <p>© {new Date().getFullYear()} <strong>Ahsan & Team</strong> · VeriMoo Platform</p>
+          <div className="flex items-center gap-3 text-[11px]">
+            <a
+              href="https://www.linkedin.com/in/ahsan-raza8hbb/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#2563EB] transition"
+            >
+              LinkedIn (Ahsan)
+            </a>
+            <span>·</span>
+            <a
+              href="https://github.com/allen9650/verimoo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#2563EB] transition"
+            >
+              GitHub Repo
+            </a>
+            <span>·</span>
+            <Link href="/about" className="hover:text-[#2563EB] transition">
+              Who We Are
+            </Link>
+          </div>
+        </div>
       </footer>
     </div>
   );

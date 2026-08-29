@@ -13,6 +13,7 @@ import {
   FolderKanban,
   Users,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui";
@@ -229,6 +230,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   )}
 
                   <Link
+                    href="/about"
+                    target="_blank"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#18181c]"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Sparkles size={16} className="text-[#7C3AED]" />
+                      <span>Who We Are (Ahsan & Team)</span>
+                    </span>
+                    <span className="text-xs text-slate-400">↗</span>
+                  </Link>
+
+                  <Link
                     href="/"
                     target="_blank"
                     className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#18181c]"
@@ -269,6 +282,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {children}
         </motion.main>
       </AnimatePresence>
+
+      {/* Admin Footer */}
+      <footer className="border-t border-[#E2E8F0] dark:border-[#27272a] bg-white/40 dark:bg-black/40 py-4 text-xs text-[#64748B] dark:text-[#94A3B8]">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span>
+            © {new Date().getFullYear()} <strong>Ahsan & Team</strong> · VeriMoo Platform
+          </span>
+          <div className="flex items-center gap-3 text-[11px]">
+            <a
+              href="https://www.linkedin.com/in/ahsan-raza8hbb/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#2563EB] transition"
+            >
+              LinkedIn (Ahsan)
+            </a>
+            <span>·</span>
+            <a
+              href="https://github.com/allen9650/verimoo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#2563EB] transition"
+            >
+              GitHub
+            </a>
+            <span>·</span>
+            <Link href="/about" target="_blank" className="hover:text-[#2563EB] transition">
+              Who We Are
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
