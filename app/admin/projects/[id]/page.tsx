@@ -1697,20 +1697,12 @@ export default function ProjectDetailPage() {
                                   setPreviewParticipant(p);
                                   markParticipantIssued(p._id);
                                 }}
-                                className="flex items-center gap-1 text-primary hover:underline font-medium"
+                                className="flex items-center gap-1 text-primary hover:underline font-medium cursor-pointer"
                                 title="Preview certificate"
                               >
                                 <Eye size={14} /> Preview
                               </button>
-                              <a
-                                className="text-gray-600 hover:text-primary hover:underline dark:text-gray-300"
-                                href={`/api/certificate/${p.serialNumber}?format=png`}
-                                onClick={() => markParticipantIssued(p._id)}
-                                title="Download 300 DPI HD PNG certificate"
-                              >
-                                Download HD PNG
-                              </a>
-                              <button className="text-red-500 hover:underline" onClick={() => deleteParticipant(p._id)}>
+                              <button className="text-red-500 hover:underline cursor-pointer" onClick={() => deleteParticipant(p._id)}>
                                 Delete
                               </button>
                             </div>
