@@ -15,10 +15,12 @@
     "seed:admin": "node scripts/seed-admin.js"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "archiver": "8.0.0",
     "bcryptjs": "3.0.3",
     "clsx": "2.1.1",
     "framer-motion": "12.42.2",
+    "jszip": "^3.10.1",
     "lucide-react": "1.24.0",
     "mongoose": "9.7.3",
     "next": "16.2.10",

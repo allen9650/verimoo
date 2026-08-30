@@ -1,4 +1,5 @@
 import { PDFDocument } from "pdf-lib";
+import JSZip from "jszip";
 
 /**
  * Universal Dual-Format (PNG & PDF) Certificate Downloader
@@ -197,6 +198,50 @@ export async function downloadCertificate(
       return;
     }
   }
+}
+
+/**
+ * Downloads a ZIP archive of all project certificates rendered strictly as 300 DPI PNGs
+ */
+export async function downloadBulkCertificatesZip(
+  project: { _id: string; name: string; templateWidth?: number; templateHeight?: number },
+  participants: Array<{ serialNumber: string; name?: string }>,
+  onProgress?: (current: number, total: number) => void
+): Promise<void> {
+  if (typeof window === "undefined" || !participants?.length) return;
+
+  const zip = new JSZip();
+  const width = project.templateWidth || 1000;
+  const height = project.templateHeight || 700;
+  const total = participants.length;
+
+  for (let i = 0; i < total; i++) {
+    const p = participants[i];
+    if (onProgress) onProgress(i + 1, total);
+
+    const safeName = (p.serialNumber || `cert_${i + 1}`).replace(/[^a-z0-9_-]+/gi, "_");
+    try {
+      let svgRes = await fetch(`/api/certificate/${encodeURIComponent(p.serialNumber)}?format=svg`);
+      if (!svgRes.ok) {
+        svgRes = await fetch(`/api/certificate?serial=${encodeURIComponent(p.serialNumber)}&format=svg`);
+      }
+      if (svgRes.ok) {
+        const svgText = await svgRes.text();
+        if (svgText && svgText.includes("<svg")) {
+          const pngBlob = await renderSvgToPngBlob(svgText, width, height);
+          if (pngBlob) {
+            zip.file(`${safeName}.png`, pngBlob);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`Could not render PNG for ${p.serialNumber}:`, e);
+    }
+  }
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const filename = `${project.name.replace(/[^a-z0-9]+/gi, "_")}_certificates.zip`;
+  triggerFileDownload(zipBlob, filename);
 }
 
 // Backward-compatible alias

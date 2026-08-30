@@ -29,7 +29,7 @@ import { Modal } from "@/components/modal";
 import { ProgressBar } from "@/components/progress-bar";
 import { formatDate, DATE_FORMAT_OPTIONS } from "@/lib/dateFormat";
 import { VERIFICATION_THEME_OPTIONS } from "@/lib/verificationThemes";
-import { downloadCertificate } from "@/lib/clientCertificateDownload";
+import { downloadCertificate, downloadBulkCertificatesZip } from "@/lib/clientCertificateDownload";
 import type { CertificateField, Project, Participant, ImportResult, TextTemplate } from "@/lib/types";
 
 const BUILTIN_KEYS = ["participantName", "serialNumber", "courseTitle", "date", "orgName"];
@@ -139,6 +139,7 @@ export default function ProjectDetailPage() {
   const [importing, setImporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingZip, setExportingZip] = useState(false);
+  const [zipProgress, setZipProgress] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [emailPasswordInput, setEmailPasswordInput] = useState("");
   const [sendingEmails, setSendingEmails] = useState(false);
@@ -1604,9 +1605,12 @@ export default function ProjectDetailPage() {
                     {exportingExcel ? "Exporting..." : "Export Excel"}
                   </button>
                   <button
-                    className="btn-outline text-xs sm:text-sm"
+                    type="button"
+                    className="btn-outline text-xs sm:text-sm cursor-pointer"
                     disabled={exportingZip}
-                    onClick={() => {
+                    onClick={async () => {
+                      if (!participants.length) return;
+                      setExportingZip(true);
                       setParticipants((prev) =>
                         prev.map((item) =>
                           item.status === "pending" || item.status === "generated"
@@ -1614,19 +1618,40 @@ export default function ProjectDetailPage() {
                             : item
                         )
                       );
-                      downloadFile(
-                        `/api/projects/${id}/certificates/zip`,
-                        `${project.name}-certificates.zip`,
-                        setExportingZip
-                      );
+                      try {
+                        // 1. Primary: Ultra HD 300 DPI Canvas + JSZip (Guaranteed Real PNGs)
+                        await downloadBulkCertificatesZip(
+                          project,
+                          participants,
+                          (cur, tot) => setZipProgress(`${cur}/${tot}`)
+                        );
+                      } catch (err) {
+                        console.warn("Client bulk export fallback to server endpoint:", err);
+                        await downloadFile(
+                          `/api/projects/${id}/certificates/zip`,
+                          `${project.name}-certificates.zip`,
+                          setExportingZip
+                        );
+                      } finally {
+                        setExportingZip(false);
+                        setZipProgress("");
+                      }
                     }}
                   >
-                    {exportingZip ? "Generating ZIP..." : "Download All (ZIP of PNGs)"}
+                    {exportingZip
+                      ? `Generating PNG ZIP (${zipProgress || "..."})`
+                      : "Download All (ZIP of PNGs)"}
                   </button>
                 </div>
               </div>
               {(exportingExcel || exportingZip) && (
-                <ProgressBar label={exportingZip ? "Rendering high-resolution certificates..." : "Preparing export..."} />
+                <ProgressBar
+                  label={
+                    exportingZip
+                      ? `Rendering 300 DPI PNG certificates ${zipProgress ? `(${zipProgress})` : "..."}`
+                      : "Preparing export..."
+                  }
+                />
               )}
               {downloadError && <p className="mt-2 text-sm text-red-600">{downloadError}</p>}
               <p className="mb-3 text-xs text-gray-400">
