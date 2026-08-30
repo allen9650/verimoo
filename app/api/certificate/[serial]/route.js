@@ -29,7 +29,7 @@ export async function GET(req, { params }) {
     // Default format for downloads is PNG. Supported options: png, pdf, svg (for web preview)
     const format = (searchParams.get("format") || "svg").toLowerCase();
 
-    // Public, unauthenticated endpoint rate limit
+    // Public, unauthenticated endpoint rate limit (180 req/min)
     if (isRateLimited(`cert:${getClientKey(req)}`, 180)) {
       return NextResponse.json(
         { error: "Too many requests. Please slow down and try again shortly." },
@@ -39,12 +39,12 @@ export async function GET(req, { params }) {
 
     await connectDB();
 
-    // Case-insensitive lookup with regex escaping
+    // Case-insensitive lean lookup for ultra-fast performance
     const safeRegex = new RegExp(`^${serial.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}$`, "i");
-    let participant = await Participant.findOne({ serialNumber: safeRegex });
+    let participant = await Participant.findOne({ serialNumber: safeRegex }).lean();
 
     if (!participant) {
-      participant = await Participant.findOne({ serialNumber: serial });
+      participant = await Participant.findOne({ serialNumber: serial }).lean();
     }
 
     // Strict 404 validation: verify certificate exists before generation
@@ -55,7 +55,7 @@ export async function GET(req, { params }) {
       );
     }
 
-    const project = await Project.findById(participant.project);
+    const project = await Project.findById(participant.project).lean();
     if (!project) {
       return NextResponse.json(
         { error: "Associated project not found." },
@@ -63,13 +63,54 @@ export async function GET(req, { params }) {
       );
     }
 
-    // Update status to issued if it was pending
+    // Update status to issued asynchronously if pending
     if (participant.status === "pending" || participant.status === "generated") {
-      try {
-        await Participant.updateOne({ _id: participant._id }, { status: "issued" });
-        participant.status = "issued";
-      } catch (e) {
-        console.warn("Could not update participant status:", e);
+      Participant.updateOne({ _id: participant._id }, { status: "issued" }).catch((e) =>
+        console.warn("Async participant status update warning:", e)
+      );
+    }
+
+    const pTime = participant.updatedAt ? new Date(participant.updatedAt).getTime() : 0;
+    const prjTime = project.updatedAt ? new Date(project.updatedAt).getTime() : 0;
+    const baseCacheKey = `${participant.serialNumber}:${pTime}:${prjTime}`;
+    const serialClean = participant.serialNumber || serial;
+    const width = project.templateWidth || 1000;
+    const height = project.templateHeight || 700;
+
+    // --- Fast-path: Check format cache directly ---
+    if (format === "png" || format === "download") {
+      const pngCacheKey = `png:${baseCacheKey}`;
+      const cachedPng = cacheGet(pngCacheKey);
+      if (cachedPng) {
+        const filename = `${serialClean}.png`;
+        return new Response(cachedPng, {
+          status: 200,
+          headers: {
+            "Content-Type": "image/png",
+            "Content-Length": String(cachedPng.length),
+            "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+    }
+
+    if (format === "pdf") {
+      const pdfCacheKey = `pdf:${baseCacheKey}`;
+      const cachedPdf = cacheGet(pdfCacheKey);
+      if (cachedPdf) {
+        const filename = `${serialClean}.pdf`;
+        return new Response(cachedPdf, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Length": String(cachedPdf.length),
+            "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
       }
     }
 
@@ -82,11 +123,7 @@ export async function GET(req, { params }) {
     }
     const verifyUrl = `${baseUrl.replace(/\/$/, "")}/verify/${encodeURIComponent(participant.serialNumber)}`;
 
-    const pTime = participant.updatedAt?.getTime() || 0;
-    const prjTime = project.updatedAt?.getTime() || 0;
-    const baseCacheKey = `${participant.serialNumber}:${pTime}:${prjTime}`;
-
-    // 1. Build or retrieve SVG
+    // Build or retrieve SVG
     const svgCacheKey = `svg:${baseCacheKey}`;
     let svg = cacheGet(svgCacheKey);
     if (!svg) {
@@ -103,23 +140,17 @@ export async function GET(req, { params }) {
       );
     }
 
-    const serialClean = participant.serialNumber || serial;
-    const width = project.templateWidth || 1000;
-    const height = project.templateHeight || 700;
-
     // --- 1. PDF Download (`format=pdf`) ---
     if (format === "pdf") {
       const pdfCacheKey = `pdf:${baseCacheKey}`;
-      let pdfBuffer = cacheGet(pdfCacheKey);
-      if (!pdfBuffer) {
-        try {
-          pdfBuffer = await generateCertificatePdf(svg, width, height, `Certificate — ${participant.name}`);
-          if (pdfBuffer) {
-            cacheSet(pdfCacheKey, pdfBuffer);
-          }
-        } catch (pdfErr) {
-          console.warn("Server PDF compilation deferred to client fallback:", pdfErr);
+      let pdfBuffer = null;
+      try {
+        pdfBuffer = await generateCertificatePdf(svg, width, height, `Certificate — ${participant.name}`);
+        if (pdfBuffer) {
+          cacheSet(pdfCacheKey, pdfBuffer);
         }
+      } catch (pdfErr) {
+        console.warn("Server PDF compilation notice:", pdfErr);
       }
 
       if (pdfBuffer) {
@@ -128,8 +159,9 @@ export async function GET(req, { params }) {
           status: 200,
           headers: {
             "Content-Type": "application/pdf",
+            "Content-Length": String(pdfBuffer.length),
             "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
-            "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
             "Access-Control-Allow-Origin": "*",
           },
         });
@@ -150,16 +182,14 @@ export async function GET(req, { params }) {
     // --- 2. PNG Download (`format=png` or `format=download`) ---
     if (format === "png" || format === "download") {
       const pngCacheKey = `png:${baseCacheKey}`;
-      let pngBuffer = cacheGet(pngCacheKey);
-      if (!pngBuffer) {
-        try {
-          pngBuffer = await svgToPngBuffer(svg, width, height);
-          if (pngBuffer) {
-            cacheSet(pngCacheKey, pngBuffer);
-          }
-        } catch (rasterErr) {
-          console.warn("Server PNG rasterization deferred to client fallback:", rasterErr);
+      let pngBuffer = null;
+      try {
+        pngBuffer = await svgToPngBuffer(svg, width, height);
+        if (pngBuffer) {
+          cacheSet(pngCacheKey, pngBuffer);
         }
+      } catch (rasterErr) {
+        console.warn("Server PNG rasterization notice:", rasterErr);
       }
 
       if (pngBuffer) {
@@ -168,8 +198,9 @@ export async function GET(req, { params }) {
           status: 200,
           headers: {
             "Content-Type": "image/png",
+            "Content-Length": String(pngBuffer.length),
             "Content-Disposition": `attachment; filename="${filename}"; filename*="UTF-8''${encodeURIComponent(filename)}"`,
-            "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
             "Access-Control-Allow-Origin": "*",
           },
         });

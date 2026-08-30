@@ -28,7 +28,7 @@ export default function HomePage() {
   const [svgMarkup, setSvgMarkup] = useState<string>("");
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [downloading, setDownloading] = useState<"png" | "pdf" | false>(false);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -86,7 +86,7 @@ export default function HomePage() {
   async function handleDownload(format: "png" | "pdf" = "png") {
     const targetSerial = (info?.serialNumber || serial).trim();
     if (!targetSerial) return;
-    setDownloading(true);
+    setDownloading(format);
     try {
       await downloadCertificate(targetSerial, format, svgMarkup);
     } catch (err) {
@@ -384,20 +384,20 @@ export default function HomePage() {
                         <button
                           type="button"
                           onClick={() => handleDownload("png")}
-                          disabled={downloading}
+                          disabled={downloading !== false}
                           className="btn-primary text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >
                           <Download size={15} />
-                          <span>{downloading ? "Processing..." : "Download PNG"}</span>
+                          <span>{downloading === "png" ? "Preparing PNG..." : "Download PNG"}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDownload("pdf")}
-                          disabled={downloading}
+                          disabled={downloading !== false}
                           className="btn-outline text-xs sm:text-sm cursor-pointer inline-flex items-center gap-2 shadow-xs"
                         >
                           <FileText size={15} className="text-[#2563EB] dark:text-[#3B82F6]" />
-                          <span>{downloading ? "Processing..." : "Download PDF"}</span>
+                          <span>{downloading === "pdf" ? "Preparing PDF..." : "Download PDF"}</span>
                         </button>
                         <Link
                           className="btn-outline text-xs sm:text-sm"

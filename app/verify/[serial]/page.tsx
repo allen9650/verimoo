@@ -43,7 +43,7 @@ export default function VerifyPage() {
   const [showPreview, setShowPreview] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [downloading, setDownloading] = useState<"png" | "pdf" | false>(false);
 
   useEffect(() => {
     if (!serial) return;
@@ -84,7 +84,7 @@ export default function VerifyPage() {
   async function handleDownload(format: "png" | "pdf" = "png") {
     const targetSerial = (result?.serialNumber || serial || "").trim();
     if (!targetSerial) return;
-    setDownloading(true);
+    setDownloading(format);
 
     try {
       await downloadCertificate(targetSerial, format, svgMarkup);
@@ -309,20 +309,20 @@ export default function VerifyPage() {
                   <button
                     type="button"
                     onClick={() => handleDownload("png")}
-                    disabled={downloading}
+                    disabled={downloading !== false}
                     className="btn-primary flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
                   >
                     <Download size={15} />
-                    <span>{downloading ? "Processing..." : "Download PNG"}</span>
+                    <span>{downloading === "png" ? "Preparing PNG..." : "Download PNG"}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDownload("pdf")}
-                    disabled={downloading}
+                    disabled={downloading !== false}
                     className="btn-outline flex-1 text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
                   >
                     <FileText size={15} className="text-[#2563EB] dark:text-[#3B82F6]" />
-                    <span>{downloading ? "Processing..." : "Download PDF"}</span>
+                    <span>{downloading === "pdf" ? "Preparing PDF..." : "Download PDF"}</span>
                   </button>
                   <Link
                     href="/"
