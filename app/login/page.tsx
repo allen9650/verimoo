@@ -39,15 +39,18 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#F8FAFC] dark:bg-black">
       {/* Top Bar with Back Link & Theme Toggle */}
-      <header className="p-4 sm:p-6 flex items-center justify-between">
+      <header className="p-3.5 sm:p-6 flex items-center justify-between w-full max-w-6xl mx-auto">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#2563EB] transition dark:text-[#94A3B8] dark:hover:text-white"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#2563EB] transition dark:text-[#94A3B8] dark:hover:text-white min-w-0 flex-shrink"
         >
-          <ArrowLeft size={14} />
-          <span>Back to Verification Search</span>
+          <ArrowLeft size={14} className="flex-shrink-0" />
+          <span className="hidden sm:inline truncate">Back to Verification Search</span>
+          <span className="sm:hidden truncate">Back to Search</span>
         </Link>
-        <ThemeToggle />
+        <div className="flex-shrink-0">
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Main Login Card */}

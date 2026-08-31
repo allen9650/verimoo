@@ -66,12 +66,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-black">
       {/* Sticky Responsive Header */}
       <header className="sticky top-0 z-40 w-full border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md dark:border-[#27272a] dark:bg-black/90">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-3.5 sm:px-6">
           {/* Brand & Desktop/Tablet Navigation */}
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-3 sm:gap-6 min-w-0 flex-shrink">
             <Link
               href="/admin"
-              className="flex items-center gap-2.5 text-base sm:text-lg font-bold tracking-tight text-[#111827] transition hover:opacity-90 dark:text-[#F8FAFC]"
+              className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight text-[#111827] transition hover:opacity-90 dark:text-[#F8FAFC] min-w-0 flex-shrink-0"
             >
               <div className="relative h-8 w-8 flex items-center justify-center">
                 <Image

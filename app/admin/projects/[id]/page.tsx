@@ -731,7 +731,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Segmented Tab Switcher */}
-        <div className="inline-flex rounded-xl bg-gray-100/90 p-1 dark:bg-gray-800/80 self-start sm:self-auto shadow-inner text-xs sm:text-sm">
+        <div className="flex max-w-full overflow-x-auto no-scrollbar rounded-xl bg-gray-100/90 p-1 dark:bg-gray-800/80 self-start sm:self-auto shadow-inner text-xs sm:text-sm">
           <button
             onClick={() => setTab("template")}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition cursor-pointer ${

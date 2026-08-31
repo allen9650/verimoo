@@ -104,22 +104,23 @@ export default function VerifyPage() {
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-black">
       {/* Verification Header */}
       <header className="w-full border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md dark:border-[#27272a] dark:bg-black/90">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-3.5 sm:px-6">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#2563EB] transition dark:text-[#94A3B8] dark:hover:text-white"
+            className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#2563EB] transition dark:text-[#94A3B8] dark:hover:text-white min-w-0 flex-shrink"
           >
-            <ArrowLeft size={14} />
-            <span>Search Certificates</span>
+            <ArrowLeft size={14} className="flex-shrink-0" />
+            <span className="hidden xs:inline truncate">Search Certificates</span>
+            <span className="xs:hidden truncate">Search</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <Link href="/" className="flex items-center gap-2 text-xs sm:text-sm font-bold text-[#111827] dark:text-[#F8FAFC]">
               <Image
                 src="/verimoo.png"
                 alt="VeriMoo"
                 width={22}
                 height={22}
-                className="h-5 w-auto object-contain"
+                className="h-5 w-auto object-contain flex-shrink-0"
               />
               <span>VeriMoo</span>
             </Link>
