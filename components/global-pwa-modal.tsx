@@ -33,6 +33,7 @@ export function GlobalPwaModal() {
   const [open, setOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
+  const [installedSuccess, setInstalledSuccess] = useState(false);
 
   useEffect(() => {
     // 1. Register Service Worker
@@ -55,7 +56,7 @@ export function GlobalPwaModal() {
 
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
-      setOpen(false);
+      setInstalledSuccess(true);
       try {
         localStorage.setItem("verimoo_pwa_installed", "true");
       } catch {}
@@ -64,6 +65,7 @@ export function GlobalPwaModal() {
     // 3. Listen for manual open trigger from any button in header or drawers
     const handleOpenModal = () => {
       setOpen(true);
+      setInstalledSuccess(false);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -100,21 +102,22 @@ export function GlobalPwaModal() {
   }, [open]);
 
   async function handleDirectInstall() {
-    if (!deferredPrompt) return;
-    setInstalling(true);
-    try {
-      await deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === "accepted") {
-        setOpen(false);
-        try {
-          localStorage.setItem("verimoo_pwa_installed", "true");
-        } catch {}
+    if (deferredPrompt) {
+      setInstalling(true);
+      try {
+        await deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice.outcome === "accepted") {
+          setInstalledSuccess(true);
+          try {
+            localStorage.setItem("verimoo_pwa_installed", "true");
+          } catch {}
+        }
+      } catch (err) {
+        console.warn("Direct install prompt error:", err);
+      } finally {
+        setInstalling(false);
       }
-    } catch (err) {
-      console.warn("Direct install error:", err);
-    } finally {
-      setInstalling(false);
     }
   }
 
@@ -192,15 +195,15 @@ export function GlobalPwaModal() {
                     Important: Mobile &amp; Android App Usage
                   </span>
                   <span className="mt-0.5 block">
-                    You <strong>cannot design or edit certificate templates</strong> on Android / mobile devices (field position editing is locked to desktop &amp; laptops). The mobile app is intended for <strong>managing certificate projects, viewing participants, issuing credentials, and instant verification</strong>.
+                    You <strong>cannot redesign certificate templates</strong> on Android / mobile devices (field position editing is locked to desktop &amp; laptops). The mobile app is intended for <strong>managing certificate projects, viewing participants, issuing credentials, and instant verification</strong>.
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Direct 1-Click Install Button (if browser prompt available) */}
-            {deferredPrompt && (
-              <div className="mt-4">
+            {/* Install Button (Always available) */}
+            <div className="mt-4">
+              {deferredPrompt ? (
                 <button
                   type="button"
                   onClick={handleDirectInstall}
@@ -210,11 +213,17 @@ export function GlobalPwaModal() {
                   <Download size={18} />
                   <span>{installing ? "Installing..." : "Install Now (1-Tap)"}</span>
                 </button>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-3 text-center dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                    {installedSuccess ? "✓ App successfully installed!" : "Follow the 3 quick steps below to install on your Android device:"}
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Step-by-Step Visual Guide for Android Chrome / Browsers */}
-            <div className="mt-5 space-y-3">
+            <div className="mt-4 space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Installation Steps on Android &amp; Chrome
               </p>

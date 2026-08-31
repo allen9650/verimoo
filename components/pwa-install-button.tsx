@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Download, Smartphone } from "lucide-react";
 import { openPwaInstallModal } from "@/components/global-pwa-modal";
 
@@ -13,40 +12,9 @@ export function PwaInstallButton({
   compact?: boolean;
   onClick?: () => void;
 }) {
-  const [isInstalled, setIsInstalled] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.matchMedia("(display-mode: fullscreen)").matches ||
-      window.matchMedia("(display-mode: minimal-ui)").matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-      document.referrer.startsWith("android-app://");
-    const stored = localStorage.getItem("verimoo_pwa_installed") === "true";
-    return isStandalone || stored;
-  });
-
-  useEffect(() => {
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      try {
-        localStorage.setItem("verimoo_pwa_installed", "true");
-      } catch {}
-    };
-
-    window.addEventListener("appinstalled", handleAppInstalled);
-    return () => {
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
-
   function handleButtonClick() {
     onClick?.();
     openPwaInstallModal();
-  }
-
-  // Auto-hide completely when running in installed/standalone PWA mode on Android/Tablets
-  if (isInstalled) {
-    return null;
   }
 
   return (
