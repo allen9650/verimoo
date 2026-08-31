@@ -19,6 +19,7 @@ import { ProgressBar } from "@/components/progress-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WhoWeAreSection, LinkedinIcon, GithubIcon } from "@/components/who-we-are-section";
 import { downloadCertificate } from "@/lib/clientCertificateDownload";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 import Link from "next/link";
 import Image from "next/image";
 import type { VerifyResult } from "@/lib/types";
@@ -139,6 +140,8 @@ export default function HomePage() {
               Admin Login
             </Link>
 
+            <PwaInstallButton />
+
             <div className="flex items-center gap-1.5 border-l border-slate-200 dark:border-[#27272a] pl-2.5">
               <a
                 href="https://www.linkedin.com/in/ahsan-raza8hbb/"
@@ -189,6 +192,7 @@ export default function HomePage() {
               className="overflow-hidden border-t border-[#E2E8F0] bg-white/95 backdrop-blur-md dark:border-[#27272a] dark:bg-black/95 sm:hidden shadow-lg"
             >
               <div className="space-y-2 px-4 py-3">
+                <PwaInstallButton compact />
                 <a
                   href="#about"
                   onClick={() => setMobileMenuOpen(false)}

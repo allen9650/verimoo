@@ -146,3 +146,4 @@ export function AboutHeader() {
     </header>
   );
 }
+

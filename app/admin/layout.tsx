@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -198,6 +199,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {isSuperadmin ? "Superadmin" : "Admin"}
                   </Badge>
                 </div>
+
+                {/* PWA Install Option */}
+                <PwaInstallButton compact />
 
                 {/* Mobile Navigation Links */}
                 <div className="space-y-1">
