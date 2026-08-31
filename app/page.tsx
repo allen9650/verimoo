@@ -192,7 +192,7 @@ export default function HomePage() {
               className="overflow-hidden border-t border-[#E2E8F0] bg-white/95 backdrop-blur-md dark:border-[#27272a] dark:bg-black/95 sm:hidden shadow-lg"
             >
               <div className="space-y-2 px-4 py-3">
-                <PwaInstallButton compact />
+                <PwaInstallButton compact onClick={() => setMobileMenuOpen(false)} />
                 <a
                   href="#about"
                   onClick={() => setMobileMenuOpen(false)}

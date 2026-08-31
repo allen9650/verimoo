@@ -201,7 +201,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
 
                 {/* PWA Install Option */}
-                <PwaInstallButton compact />
+                <PwaInstallButton compact onClick={() => setMobileMenuOpen(false)} />
 
                 {/* Mobile Navigation Links */}
                 <div className="space-y-1">
