@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Sparkles,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -100,13 +101,13 @@ export function PwaInstallModal({
             {/* Header with App Icon and Close Button */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-[#27272a]">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 p-2 shadow-xs dark:bg-blue-950/40">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-100 dark:border-[#27272a] dark:bg-[#18181f]">
                   <Image
-                    src="/verimoo.png"
+                    src="/icons/icon-192x192.png"
                     alt="VeriMoo App"
-                    width={40}
-                    height={40}
-                    className="h-9 w-9 object-contain"
+                    width={42}
+                    height={42}
+                    className="h-10 w-10 object-contain rounded-lg"
                   />
                 </div>
                 <div>
@@ -134,8 +135,23 @@ export function PwaInstallModal({
               <div className="flex items-start gap-2.5">
                 <Sparkles size={18} className="text-[#2563EB] dark:text-[#3B82F6] shrink-0 mt-0.5" />
                 <p className="text-xs sm:text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
-                  Install VeriMoo on your Android phone or tablet for fast 1-tap access, offline verification, and smooth fullscreen management.
+                  Install VeriMoo on your Android phone or tablet for fast 1-tap access, offline verification, and smooth fullscreen task management.
                 </p>
+              </div>
+            </div>
+
+            {/* Mobile Usage Instruction / Notice */}
+            <div className="mt-3.5 rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 dark:border-amber-900/50 dark:bg-amber-950/30">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+                  <span className="font-bold block text-amber-950 dark:text-amber-100">
+                    Important: Mobile &amp; Android App Usage
+                  </span>
+                  <span className="mt-0.5 block">
+                    You <strong>cannot design or edit certificate templates</strong> on Android / mobile devices (field position editing is locked to desktop &amp; laptops). The mobile app is intended for <strong>managing certificate projects, viewing participants, issuing credentials, and instant verification</strong>.
+                  </span>
+                </div>
               </div>
             </div>
 

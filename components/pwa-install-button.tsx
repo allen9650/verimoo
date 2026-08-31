@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Smartphone, Check } from "lucide-react";
+import { Download, Smartphone } from "lucide-react";
 import { PwaInstallModal } from "@/components/pwa-install-modal";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -21,10 +21,14 @@ export function PwaInstallButton({
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(() => {
     if (typeof window === "undefined") return false;
-    return (
+    const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true
-    );
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      window.matchMedia("(display-mode: minimal-ui)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+      document.referrer.startsWith("android-app://");
+    const stored = localStorage.getItem("verimoo_pwa_installed") === "true";
+    return isStandalone || stored;
   });
   const [showModal, setShowModal] = useState(false);
 
@@ -50,6 +54,9 @@ export function PwaInstallButton({
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      try {
+        localStorage.setItem("verimoo_pwa_installed", "true");
+      } catch {}
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -66,13 +73,9 @@ export function PwaInstallButton({
     setShowModal(true);
   }
 
-  if (isInstalled && !compact) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-        <Check size={13} />
-        <span>App Installed</span>
-      </span>
-    );
+  // Auto-hide completely when running in installed/standalone PWA mode on Android/Tablets
+  if (isInstalled) {
+    return null;
   }
 
   return (
@@ -100,7 +103,12 @@ export function PwaInstallButton({
         open={showModal}
         onClose={() => setShowModal(false)}
         deferredPrompt={deferredPrompt}
-        onInstalled={() => setIsInstalled(true)}
+        onInstalled={() => {
+          setIsInstalled(true);
+          try {
+            localStorage.setItem("verimoo_pwa_installed", "true");
+          } catch {}
+        }}
       />
     </>
   );
