@@ -18,23 +18,64 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
-export function PwaInstallModal({
-  open,
-  onClose,
-  deferredPrompt,
-  onInstalled,
-}: {
-  open: boolean;
-  onClose: () => void;
-  deferredPrompt: BeforeInstallPromptEvent | null;
-  onInstalled?: () => void;
-}) {
+export function openPwaInstallModal() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("open-verimoo-pwa-modal"));
+  }
+}
+
+export function GlobalPwaModal() {
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
+  const [open, setOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
+
+  useEffect(() => {
+    // 1. Register Service Worker
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          console.log("VeriMoo PWA Service Worker active:", reg.scope);
+        })
+        .catch((err) => {
+          console.warn("PWA Service Worker registration notice:", err);
+        });
+    }
+
+    // 2. Listen for browser install prompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setOpen(false);
+      try {
+        localStorage.setItem("verimoo_pwa_installed", "true");
+      } catch {}
+    };
+
+    // 3. Listen for manual open trigger from any button in header or drawers
+    const handleOpenModal = () => {
+      setOpen(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+    window.addEventListener("open-verimoo-pwa-modal", handleOpenModal);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      window.removeEventListener("open-verimoo-pwa-modal", handleOpenModal);
+    };
+  }, []);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -52,11 +93,11 @@ export function PwaInstallModal({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open]);
 
   async function handleDirectInstall() {
     if (!deferredPrompt) return;
@@ -65,8 +106,10 @@ export function PwaInstallModal({
       await deferredPrompt.prompt();
       const choice = await deferredPrompt.userChoice;
       if (choice.outcome === "accepted") {
-        onInstalled?.();
-        onClose();
+        setOpen(false);
+        try {
+          localStorage.setItem("verimoo_pwa_installed", "true");
+        } catch {}
       }
     } catch (err) {
       console.warn("Direct install error:", err);
@@ -85,23 +128,23 @@ export function PwaInstallModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto"
-          onClick={onClose}
+          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto"
+          onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
         >
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={{ opacity: 0, y: 40, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            exit={{ opacity: 0, y: 40, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-2xl dark:border-[#27272a] dark:bg-[#121216] max-h-[92vh] overflow-y-auto"
           >
             {/* Header with App Icon and Close Button */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-[#27272a]">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-100 dark:border-[#27272a] dark:bg-[#18181f]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5 shadow-xs border border-slate-100 dark:border-[#27272a] dark:bg-[#18181f]">
                   <Image
                     src="/icons/icon-192x192.png"
                     alt="VeriMoo App"
@@ -122,7 +165,7 @@ export function PwaInstallModal({
 
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => setOpen(false)}
                 aria-label="Close modal"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:bg-[#1f1f26] dark:text-slate-400 dark:hover:bg-[#2a2a34] dark:hover:text-white transition cursor-pointer"
               >
@@ -236,7 +279,7 @@ export function PwaInstallModal({
             <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-[#27272a]">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => setOpen(false)}
                 className="w-full sm:w-auto rounded-xl bg-slate-100 px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 hover:bg-slate-200 dark:bg-[#202028] dark:text-slate-200 dark:hover:bg-[#2c2c38] transition cursor-pointer text-center"
               >
                 Close
@@ -250,4 +293,4 @@ export function PwaInstallModal({
   );
 }
 
-export default PwaInstallModal;
+export default GlobalPwaModal;

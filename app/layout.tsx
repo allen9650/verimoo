@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import Providers from "./providers";
 import { ThemeProvider, themeInitScript } from "./theme-provider";
 import { ChangelogModal } from "@/components/changelog-modal";
+import { GlobalPwaModal } from "@/components/global-pwa-modal";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic", "cyrillic-ext", "greek", "greek-ext", "vietnamese", "latin-ext"],
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             {children}
             <ChangelogModal />
+            <GlobalPwaModal />
           </ThemeProvider>
         </Providers>
       </body>
